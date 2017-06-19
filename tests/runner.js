@@ -29,48 +29,28 @@ config.shim.boot = {
 
 require.config(config);
 
-// Polyfill 'bind' which is not available in phantomjs < 2.0
-if (!Function.prototype.bind) {
-    Function.prototype.bind = function (oThis) {
-        if (typeof this !== "function") {
-            // closest thing possible to the ECMAScript 5 internal IsCallable function
-            throw new TypeError("Function.prototype.bind - what is trying to be bound is not callable");
-        }
-        var aArgs = Array.prototype.slice.call(arguments, 1),
-            fToBind = this,
-            fNOP = function () {},
-            fBound = function () {
-            return fToBind.apply(this instanceof fNOP && oThis ? this : oThis,
-                aArgs.concat(Array.prototype.slice.call(arguments)));
-            };
-        fNOP.prototype = this.prototype;
-        fBound.prototype = new fNOP();
-        return fBound;
-    };
-}
-
 var specs = [
     //"spec/transcripts",
     // "spec/profiling",
     "spec/utils",
-    //"spec/converse",
-    //"spec/bookmarks",
-    //"spec/roomslist",
-    //"spec/headline",
-    //"spec/disco",
-    //"spec/protocol",
-    //"spec/presence",
-    //"spec/eventemitter",
-    //"spec/ping",
-    //"spec/xmppstatus",
-    //"spec/mam",
-    //"spec/otr",
-    //"spec/controlbox",
-    //"spec/chatbox",
-    //"spec/chatroom",
-    //"spec/minchats",
-    //"spec/notification",
-    //"spec/register"
+    "spec/converse",
+    "spec/bookmarks",
+    "spec/roomslist",
+    "spec/headline",
+    "spec/disco",
+    "spec/protocol",
+    "spec/presence",
+    "spec/eventemitter",
+    "spec/ping",
+    "spec/xmppstatus",
+    "spec/mam",
+    "spec/otr",
+    "spec/controlbox",
+    "spec/chatbox",
+    "spec/chatroom",
+    "spec/minchats",
+    "spec/notification",
+    "spec/register"
 ];
 
 require(['jquery', 'mock', 'boot', 'sinon', 'wait-until-promise', 'pluggable'],
@@ -83,14 +63,11 @@ require(['jquery', 'mock', 'boot', 'sinon', 'wait-until-promise', 'pluggable'],
     var jasmineEnv = jasmine.getEnv();
 
     var noopTimer = {
-        start: function(){},
-        elapsed: function(){ return 0; }
+        start: function() {},
+        elapsed: function() { return 0; }
     };
     function ConsoleReporter(options) {
-        var print = options.print,
-            showColors = options.showColors || false,
-            onComplete = options.onComplete || function() {},
-            timer = options.timer || noopTimer,
+        var timer = noopTimer,
             specCount,
             failureCount,
             failedSpecs = [],
@@ -102,6 +79,10 @@ require(['jquery', 'mock', 'boot', 'sinon', 'wait-until-promise', 'pluggable'],
                 none: '\x1B[0m'
             },
             failedSuites = [];
+
+        var print = function print(message) {
+            console.log(message + '\x03\b');
+        }
 
         this.jasmineStarted = function() {
             specCount = 0;
@@ -121,14 +102,11 @@ require(['jquery', 'mock', 'boot', 'sinon', 'wait-until-promise', 'pluggable'],
 
             if(specCount > 0) {
                 printNewline();
-
                 var specCounts = specCount + ' ' + plural('spec', specCount) + ', ' +
-                failureCount + ' ' + plural('failure', failureCount);
-
+                        failureCount + ' ' + plural('failure', failureCount);
                 if (pendingCount) {
-                specCounts += ', ' + pendingCount + ' pending ' + plural('spec', pendingCount);
+                    specCounts += ', ' + pendingCount + ' pending ' + plural('spec', pendingCount);
                 }
-
                 print(specCounts);
             } else {
                 print('No specs found');
@@ -142,8 +120,8 @@ require(['jquery', 'mock', 'boot', 'sinon', 'wait-until-promise', 'pluggable'],
             for(i = 0; i < failedSuites.length; i++) {
                 suiteFailureDetails(failedSuites[i]);
             }
-
-            onComplete(failureCount === 0);
+            var exitCode = failureCount === 0 ? 0 : 1;
+            console.info('All tests completed!' + exitCode);
         };
 
         this.specDone = function(result) {
@@ -179,7 +157,7 @@ require(['jquery', 'mock', 'boot', 'sinon', 'wait-until-promise', 'pluggable'],
         }
 
         function colored(color, str) {
-            return showColors ? (ansi[color] + str + ansi.none) : str;
+            return ansi[color] + str + ansi.none;
         }
 
         function plural(str, count) {
@@ -226,18 +204,7 @@ require(['jquery', 'mock', 'boot', 'sinon', 'wait-until-promise', 'pluggable'],
             printNewline();
         }
     }
-
-    var consoleReporter = new ConsoleReporter({
-        print: function print(message) {
-            console.log(message + '\x03\b');
-        },
-        onComplete: function onComplete(isSuccess) {
-            var exitCode = isSuccess ? 0 : 1;
-            console.info('All tests completed!' + exitCode);
-        },
-        showColors: true
-    });
-    jasmineEnv.addReporter(consoleReporter);
+    jasmineEnv.addReporter(new ConsoleReporter());
 
     // Load the specs
     require(specs, function () {
