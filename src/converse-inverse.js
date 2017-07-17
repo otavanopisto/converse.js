@@ -44,39 +44,39 @@
             //
             // new functions which don't exist yet can also be added.
 
-            areDesktopNotificationsEnabled () {
-                // Call with "ignore_hidden" as true, so that it doesn't check
-                // if the windowState is hidden.
-                return this.__super__.areDesktopNotificationsEnabled.call(this, true);
-            },
-
             shouldNotifyOfMessage (message) {
-                const { _converse } = this.__super__;
                 const result = this.__super__.shouldNotifyOfMessage.apply(this, arguments);
-                return result && isMessageToHiddenChat(_converse, message);
+                const { _converse } = this.__super__;
+                if (_converse.mode === 'fullscreen') {
+                    return result && isMessageToHiddenChat(_converse, message);
+                }
             },
 
             ControlBoxView: {
                 renderContactsPanel () {
-                    this.__super__.renderContactsPanel.apply(this, arguments);
-                    this.el.classList.remove("fullscreen");
+                    if (this.__super__._converse.mode === 'fullscreen') {
+                        this.__super__.renderContactsPanel.apply(this, arguments);
+                        this.el.classList.remove("fullscreen");
+                    }
                     return this;
                 },
 
                 renderRegistrationPanel () {
                     this.__super__.renderRegistrationPanel.apply(this, arguments);
-
-                    const el = document.getElementById('converse-register');
-                    el.parentNode.insertBefore(createBrandHeadingElement(), el);
+                    if (this.__super__._converse.mode === 'fullscreen') {
+                        const el = document.getElementById('converse-register');
+                        el.parentNode.insertBefore(createBrandHeadingElement(), el);
+                    }
                     return this;
                 },
 
                 renderLoginPanel () {
                     this.__super__.renderLoginPanel.apply(this, arguments);
-                    this.el.classList.add("fullscreen");
-
-                    const el = document.getElementById('converse-login');
-                    el.parentNode.insertBefore(createBrandHeadingElement(), el);
+                    if (this.__super__._converse.mode === 'fullscreen') {
+                        this.el.classList.add("fullscreen");
+                        const el = document.getElementById('converse-login');
+                        el.parentNode.insertBefore(createBrandHeadingElement(), el);
+                    }
                     return this;
                 }
             },
@@ -85,9 +85,11 @@
                 afterShown (focus) {
                     /* Make sure chat rooms are scrolled down when opened
                      */
-                    this.scrollDown();
-                    if (focus) {
-                        this.focus();
+                    if (this.__super__._converse.mode === 'fullscreen') {
+                        this.scrollDown();
+                        if (focus) {
+                            this.focus();
+                        }
                     }
                     return this.__super__.afterShown.apply(this, arguments);
                 }
@@ -95,13 +97,15 @@
         },
 
         initialize () {
-            this._converse.api.settings.update({
-                chatview_avatar_height: 44,
-                chatview_avatar_width: 44,
-                hide_open_bookmarks: true,
-                show_controlbox_by_default: true,
-                sticky_controlbox: true,
-            });
+            if (this._converse.mode === 'fullscreen') {
+                this._converse.api.settings.update({
+                    chatview_avatar_height: 44,
+                    chatview_avatar_width: 44,
+                    hide_open_bookmarks: true,
+                    show_controlbox_by_default: true,
+                    sticky_controlbox: true,
+                });
+            }
         }
     });
 }));

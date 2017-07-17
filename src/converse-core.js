@@ -60,7 +60,9 @@
         'converse-controlbox',
         'converse-core',
         'converse-dragresize',
+        'converse-singleton',
         'converse-headline',
+        'converse-inverse',
         'converse-mam',
         'converse-minimize',
         'converse-muc',
@@ -251,6 +253,8 @@
         // Default configuration values
         // ----------------------------
         this.default_settings = {
+            mode: 'overlayed', // Can be 'overlayed' or 'fullscreen'
+
             allow_contact_requests: true,
             allow_non_roster_messaging: false,
             animate: true,

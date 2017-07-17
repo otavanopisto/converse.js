@@ -43,13 +43,26 @@
             // relevant objects or classes.
             //
             // new functions which don't exist yet can also be added.
+ 
+            areDesktopNotificationsEnabled () {
+                // Call with "ignore_hidden" as true, so that it doesn't check
+                // if the windowState is hidden.
+                if (this.__super__._converse.mode === 'fullscreen') {
+                    return this.__super__.areDesktopNotificationsEnabled.call(this, true);
+                } else {
+                    return this.__super__.areDesktopNotificationsEnabled.call(this, arguments);
+                }
+            },
+
 
             ChatBoxes: {
                 createChatBox (jid, attrs) {
                     /* Make sure new chat boxes are hidden by default.
                      */
-                    attrs = attrs || {};
-                    attrs.hidden = true;
+                    if (this.__super__._converse.mode === 'fullscreen') {
+                        attrs = attrs || {};
+                        attrs.hidden = true;
+                    }
                     return this.__super__.createChatBox.call(this, jid, attrs);
                 }
             },
@@ -60,7 +73,9 @@
                      * user. They should always be shown.
                      */
                     const result = this.__super__.parseRoomDataFromEvent.apply(this, arguments);
-                    result.hidden = false;
+                    if (this.__super__._converse.mode === 'fullscreen') {
+                        result.hidden = false;
+                    }
                     return result;
                 }
             },
@@ -72,11 +87,13 @@
                      * chats are hidden.
                      */
                     const { _converse } = this.__super__;
-                    const chatbox = this.getChatBox(attrs, true);
-                    const hidden = _.isUndefined(attrs.hidden) ? chatbox.get('hidden') : attrs.hidden;
-                    if ((force || !hidden) && _converse.connection.authenticated) {
-                        _.each(_converse.chatboxviews.xget(chatbox.get('id')), hideChat);
-                        chatbox.save({'hidden': false});
+                    if (_converse.mode === 'fullscreen') {
+                        const chatbox = this.getChatBox(attrs, true);
+                        const hidden = _.isUndefined(attrs.hidden) ? chatbox.get('hidden') : attrs.hidden;
+                        if ((force || !hidden) && _converse.connection.authenticated) {
+                            _.each(_converse.chatboxviews.xget(chatbox.get('id')), hideChat);
+                            chatbox.save({'hidden': false});
+                        }
                     }
                     return this.__super__.showChat.apply(this, arguments);
                 }
@@ -88,8 +105,12 @@
                      * time. So before opening a chat, we make sure all other
                      * chats are hidden.
                      */
-                    if (!this.model.get('hidden')) {
-                        _.each(this.__super__._converse.chatboxviews.xget(this.model.get('id')), hideChat);
+                    if (this.__super__._converse.mode === 'fullscreen') {
+                        if (!this.model.get('hidden')) {
+                            _.each(this.__super__._converse.chatboxviews.xget(this.model.get('id')), hideChat);
+                            return this.__super__._show.apply(this, arguments);
+                        }
+                    } else {
                         return this.__super__._show.apply(this, arguments);
                     }
                 }
@@ -101,8 +122,10 @@
                      * time. So before opening a chat, we make sure all other
                      * chats are hidden.
                      */
-                    _.each(this.__super__._converse.chatboxviews.xget('controlbox'), hideChat);
-                    this.model.save({'hidden': false});
+                    if (this.__super__._converse.mode === 'fullscreen') {
+                        _.each(this.__super__._converse.chatboxviews.xget('controlbox'), hideChat);
+                        this.model.save({'hidden': false});
+                    }
                     return this.__super__.openChat.apply(this, arguments);
                 },
             }
