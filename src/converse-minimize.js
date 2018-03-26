@@ -66,11 +66,19 @@
                     if (this.get('id') === 'controlbox') {
                         return;
                     }
-                    this.save({
-                        'minimized': sessionStorage.getItem(this.get('id')) ||  this.get('minimized'),
-                        'time_minimized': this.get('time_minimized') || moment(),
-                    });
+                    sessionStorage.getItem(this.get('id'));
                     
+                    if (this.get('minimized') == false){
+                      this.save({
+                          'minimized': false,
+                          'time_minimized': this.get('time_minimized') || moment(),
+                      });
+                    } else {
+                      this.save({
+                          'minimized': true,
+                          'time_minimized': this.get('time_minimized') || moment(),
+                      });
+                    }    
                 },
                 
                 maximize () {
