@@ -69,7 +69,7 @@
                     sessionStorage.getItem(this.get('id'));
                     
                     if (this.get('minimized') == false){
-                      this.save({
+                      this.save({ 
                           'minimized': false,
                           'time_minimized': this.get('time_minimized') || moment(),
                       });
