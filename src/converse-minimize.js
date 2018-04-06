@@ -66,17 +66,27 @@
                     if (this.get('id') === 'controlbox') {
                         return;
                     }
-                    this.save({
-                        'minimized': this.get('minimized') || _converse.auto_minimize,
-                        'time_minimized': this.get('time_minimized') || moment(),
-                    });
+                    sessionStorage.getItem(this.get('id'));
+                    
+                    if (this.get('minimized') == false){
+                      this.save({ 
+                          'minimized': false,
+                          'time_minimized': this.get('time_minimized') || moment(),
+                      });
+                    } else {
+                      this.save({
+                          'minimized': true,
+                          'time_minimized': this.get('time_minimized') || moment(),
+                      });
+                    }    
                 },
-
+                
                 maximize () {
                     utils.safeSave(this, {
                         'minimized': false,
                         'time_opened': moment().valueOf()
                     });
+                    sessionStorage.setItem(this.get('id'), this.get('minimized'));
                 },
 
                 minimize () {
@@ -84,9 +94,9 @@
                         'minimized': true,
                         'time_minimized': moment().format()
                     });
+                    sessionStorage.setItem(this.get('id'), this.get('minimized'));
                 },
             },
-
             ChatBoxView: {
                 events: {
                     'click .toggle-chatbox-button': 'minimize',
