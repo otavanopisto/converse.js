@@ -1459,10 +1459,13 @@
                      *  <feature var='muc_nonanonymous'/>
                      *  <feature var='urn:xmpp:mam:0'/>
                      */
+                	var name = this.model.get('name');
+
                     const features = {
                         'features_fetched': true,
-                        'name': Strophe.unescapeNode(Strophe.getNodeFromJid(jid))
-                    }
+                        'name': name
+                    };
+                    
                     _.each(iq.querySelectorAll('feature'), function (field) {
                         const fieldname = field.getAttribute('var');
                         if (!fieldname.startsWith('muc_')) {
