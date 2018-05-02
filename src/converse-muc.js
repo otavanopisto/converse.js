@@ -1463,7 +1463,7 @@
 
                     const features = {
                         'features_fetched': true,
-                        'name': name
+                        'name': name 
                     };
                     
                     _.each(iq.querySelectorAll('feature'), function (field) {
