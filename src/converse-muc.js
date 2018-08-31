@@ -2660,7 +2660,6 @@
                         const $name = this.$el.find('input.new-chatroom-name');
                         const $server= this.$el.find('input.new-chatroom-server');
                         const server = $server.val();
-                        var checkbox_persistent = document.getElementById("make-persistent");
                         name = $name.val().trim();
                         $name.val(''); // Clear the input
                         if (name && server) {
