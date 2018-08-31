@@ -372,7 +372,7 @@
                 },
                 hide_occupants:false,
                 limit_room_controls:false,
-                show_checkbox_persistent: CHAT_CHECKBOX_PERMISSION
+                show_checkbox_persistent: CREATE_PERMANENT_CHATROOM
                 
                 
             });
@@ -1311,7 +1311,7 @@
                     }
                     _.each($fields, function (field) {
                     	var remove_controls; 
-                    	if (CHAT_CHECKBOX_PERMISSION === true) { 
+                    	if (CREATE_PERMANENT_CHATROOM === true) { 
                     		remove_controls = LIMIT_CONFIG_EXTENDED; 
                     	} else { 
                     		remove_controls = LIMIT_CONFIG; 
