@@ -111,6 +111,19 @@
       "muc#roomconfig_presencebroadcast"
     ];
     
+
+      const LIMIT_CONFIG_EXTENDED = [
+       "muc#roomconfig_passwordprotectedroom",
+       "muc#roomconfig_roomsecret",
+       "muc#roomconfig_roomadmins",
+       "muc#roomconfig_roomowners",
+       "muc#roomconfig_enablelogging",
+       "x-muc#roomconfig_registration",
+       "x-muc#roomconfig_reservednick",
+       "muc#roomconfig_whois",
+       "muc#roomconfig_presencebroadcast"
+       ];
+    
     converse.ROOMSTATUS = {
         CONNECTED: 0,
         CONNECTING: 1,
@@ -358,7 +371,9 @@
                     'toggle_occupants': true
                 },
                 hide_occupants:false,
-                limit_room_controls:false
+                limit_room_controls:false,
+                show_checkbox_persistent: CREATE_PERMANENT_CHATROOM
+                
                 
             });
             _converse.api.promises.add('roomsPanelRendered');
@@ -1294,7 +1309,13 @@
                         $fieldset.append($('<p class="instructions">').text(instructions));
                     }
                     _.each($fields, function (field) {
-                      if(_converse.limit_room_controls === false ||LIMIT_CONFIG.includes(field.getAttribute('var')) === false){
+                    	var remove_controls; 
+                    	if (CREATE_PERMANENT_CHATROOM === true) { 
+                    		remove_controls = LIMIT_CONFIG_EXTENDED; 
+                    	} else { 
+                    		remove_controls = LIMIT_CONFIG; 
+                    	} 
+                      if(_converse.limit_room_controls === false ||remove_controls.includes(field.getAttribute('var')) === false){
                         $fieldset.append(utils.xForm2webForm(field, stanza));
                       }
                     });
@@ -1463,7 +1484,7 @@
 
                     const features = {
                         'features_fetched': true,
-                        'name': name 
+                        'name': name
                     };
                     
                     _.each(iq.querySelectorAll('feature'), function (field) {
@@ -1472,6 +1493,7 @@
                             if (fieldname === Strophe.NS.MAM) {
                                 features.mam_enabled = true;
                             }
+                            
                             return;
                         }
                         features[fieldname.replace('muc_', '')] = true;
@@ -2453,6 +2475,7 @@
                         'label_nickname': __('Nickname'),
                         'label_server': __('Server'),
                         'label_join': __('Join Room'),
+                        'show_checkbox_persistent': _converse.show_checkbox_persistent,
                         'label_show_rooms': __('Show rooms')
                     });
                     this.renderTab();
@@ -2649,6 +2672,7 @@
                             if (!server) { $server.addClass('error'); }
                             return;
                         }
+
                     }
                     return {
                         'jid': jid,
@@ -2712,7 +2736,10 @@
                         'jid': room_jid,
                         'password': $x.attr('password')
                     });
+                   
+                	
                     if (chatroom.get('connection_status') === converse.ROOMSTATUS.DISCONNECTED) {
+
                         _converse.chatboxviews.get(room_jid).join();
                     }
                 }
