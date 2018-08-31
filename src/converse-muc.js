@@ -376,7 +376,6 @@
                 
                 
             });
-            console.log(_converse.api);
             _converse.api.promises.add('roomsPanelRendered');
 
             _converse.openChatRoom = function (settings, bring_to_foreground) {
@@ -2662,7 +2661,6 @@
                         const $server= this.$el.find('input.new-chatroom-server');
                         const server = $server.val();
                         var checkbox_persistent = document.getElementById("make-persistent");
-                    	console.log(checkbox_persistent);
                         name = $name.val().trim();
                         $name.val(''); // Clear the input
                         if (name && server) {
