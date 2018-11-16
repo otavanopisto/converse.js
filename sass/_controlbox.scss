@@ -1,5 +1,21 @@
 #conversejs {
-    #controlbox { 
+    #controlbox {
+        #overlay {
+            position: absolute;
+            padding: 0% 4%; 
+            display: none;
+            width: 100%;
+            background-color: white;
+            z-index: 2; 
+            transition: all .5s ease;
+        }
+        
+        #overlay.show {
+            height: 100%;
+            display:block;
+            
+        }
+         
         .pure-form.converse-form {
             padding: 0;
         }

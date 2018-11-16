@@ -133,7 +133,8 @@
                     const { _converse } = this.__super__;
                     const controlbox = this.get('controlbox');
                     if (view.model.get('id') === 'controlbox') {
-                        /* We return the width of the controlbox or its toggle,
+                        /*
+                         * We return the width of the controlbox or its toggle,
                          * depending on which is visible.
                          */
                         if (!controlbox || !controlbox.$el.is(':visible')) {
@@ -171,7 +172,8 @@
         },
 
         initialize () {
-            /* The initialize function gets called as soon as the plugin is
+            /*
+             * The initialize function gets called as soon as the plugin is
              * loaded by converse.js's plugin machinery.
              */
             const { _converse } = this,
@@ -206,6 +208,8 @@
                 events: {
                     'click a.close-chatbox-button': 'close',
                     'click ul#controlbox-tabs li a': 'switchTab',
+                    'click a.add-chatroom-button': 'addRoom',
+                    'submit': 'closeOverlay'
                 },
 
                 initialize () {
@@ -264,7 +268,8 @@
                 },
 
                 insertRoster () {
-                    /* Place the rosterview inside the "Contacts" panel.
+                    /*
+                     * Place the rosterview inside the "Contacts" panel.
                      */
                     this.contactspanel.$el.append(_converse.rosterview.$el);
                     return this;
@@ -374,12 +379,28 @@
                     }
                     return this;
                 },
+                
+                addRoom (ev) {
+                  document.getElementById("overlay").className = "show";
+                  
+                },
+                
+                closeOverlay (ev) {
+                  let newChatRoomName = document.getElementById("new-room-name");
+                  
+                  
+                  if (newChatRoomName.value !== ""){
+                    document.getElementById("overlay").classList.remove("show");
+                    newChatRoomName.value = ""; // Clear the input
+                  }
+                },
 
                 showHelpMessages () {
-                    /* Override showHelpMessages in ChatBoxView, for now do nothing.
-                     *
-                     * Parameters:
-                     *  (Array) msgs: Array of messages
+                    /*
+                     * Override showHelpMessages in ChatBoxView, for now do
+                     * nothing.
+                     * 
+                     * Parameters: (Array) msgs: Array of messages
                      */
                     return;
                 }
@@ -424,7 +445,8 @@
                 },
 
                 authenticate (ev) {
-                    /* Authenticate the user based on a form submission event.
+                    /*
+                     * Authenticate the user based on a form submission event.
                      */
                     if (ev && ev.preventDefault) { ev.preventDefault(); }
                     const $form = $(ev.target);
@@ -514,7 +536,8 @@
                                 'desc_custom_status': __('Click here to write a custom status message'),
                                 'desc_change_status': __('Click to change your chat status')
                                 }));
-                    // iterate through all the <option> elements and add option values
+                    // iterate through all the <option> elements and add option
+                    // values
                     options.each(function () {
                         options_list.push(tpl_status_option({
                             'value': $(this).val(),
@@ -585,7 +608,8 @@
 
                 updateStatusUI (model) {
                     const stat = model.get('status');
-                    // For translators: the %1$s part gets replaced with the status
+                    // For translators: the %1$s part gets replaced with the
+                    // status
                     // Example, I am online
                     const status_message = model.get('status_message') || __("I am %1$s", this.getPrettyStatus(stat));
                     this.$el.find('#fancy-xmpp-status-select').removeClass('no-border').html(
@@ -766,7 +790,8 @@
                 render () {
                     // We let the render method of ControlBoxView decide whether
                     // the ControlBox or the Toggle must be shown. This prevents
-                    // artifacts (i.e. on page load the toggle is shown only to then
+                    // artifacts (i.e. on page load the toggle is shown only to
+                    // then
                     // seconds later be hidden in favor of the control box).
                     this.el.innerHTML = tpl_controlbox_toggle({
                         'label_toggle': __('Toggle chat')
@@ -830,10 +855,10 @@
               .catch(_.partial(_converse.log, _, Strophe.LogLevel.FATAL));
 
             const disconnect =  function () {
-                /* Upon disconnection, set connected to `false`, so that if
-                 * we reconnect,
-                 * "onConnected" will be called, to fetch the roster again and
-                 * to send out a presence stanza.
+                /*
+                 * Upon disconnection, set connected to `false`, so that if we
+                 * reconnect, "onConnected" will be called, to fetch the roster
+                 * again and to send out a presence stanza.
                  */
                 const view = _converse.chatboxviews.get('controlbox');
                 view.model.set({connected:false});
@@ -843,7 +868,8 @@
             _converse.on('disconnected', disconnect);
 
             const afterReconnected = function () {
-                /* After reconnection makes sure the controlbox's is aware.
+                /*
+                 * After reconnection makes sure the controlbox's is aware.
                  */
                 const view = _converse.chatboxviews.get('controlbox');
                 if (view.model.get('connected')) {

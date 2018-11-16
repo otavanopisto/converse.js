@@ -32,6 +32,7 @@
             "tpl!room_description",
             "tpl!room_item",
             "tpl!room_panel",
+            "tpl!new_room_panel",
             "tpl!spinner",
             "awesomplete",
             "converse-chatview",
@@ -59,6 +60,7 @@
             tpl_room_description,
             tpl_room_item,
             tpl_room_panel,
+            tpl_new_room_panel,
             tpl_spinner,
             Awesomplete
     ) {
@@ -121,16 +123,16 @@
     };
 
     converse.plugins.add('converse-muc', {
-        /* Optional dependencies are other plugins which might be
-         * overridden or relied upon, and therefore need to be loaded before
-         * this plugin. They are called "optional" because they might not be
-         * available, in which case any overrides applicable to them will be
-         * ignored.
-         *
-         * It's possible however to make optional dependencies non-optional.
-         * If the setting "strict_plugin_dependencies" is set to true,
-         * an error will be raised if the plugin is not found.
-         *
+        /*
+         * Optional dependencies are other plugins which might be overridden or
+         * relied upon, and therefore need to be loaded before this plugin. They
+         * are called "optional" because they might not be available, in which
+         * case any overrides applicable to them will be ignored.
+         * 
+         * It's possible however to make optional dependencies non-optional. If
+         * the setting "strict_plugin_dependencies" is set to true, an error
+         * will be raised if the plugin is not found.
+         * 
          * NB: These plugins need to have already been loaded via require.js.
          */
         optional_dependencies: ["converse-controlbox"],
@@ -167,7 +169,9 @@
                     this.roomspanel = new _converse.RoomsPanel({
                         '$parent': this.$el.find('.controlbox-panes'),
                         'model': new (Backbone.Model.extend({
-                            id: b64_sha1(`converse.roomspanel${_converse.bare_jid}`), // Required by sessionStorage
+                            id: b64_sha1(`converse.roomspanel${_converse.bare_jid}`), // Required
+                                                                                      // by
+                                                                                      // sessionStorage
                             browserStorage: new Backbone.BrowserStorage[_converse.storage](
                                 b64_sha1(`converse.roomspanel${_converse.bare_jid}`))
                         }))()
@@ -180,6 +184,27 @@
                     }
                     _converse.emit('roomsPanelRendered');
                 },
+                
+                renderNewRoomPanel () {
+                  const { _converse } = this.__super__;
+                  this.newroompanel = new _converse.NewRoomPanel({
+                      '$parent': this.$el.find('#overlaydiv'),
+                      'model': new (Backbone.Model.extend({
+                          id: b64_sha1(`converse.newroompanel${_converse.bare_jid}`), // Required
+                                                                                      // by
+                                                                                      // sessionStorage
+                          browserStorage: new Backbone.BrowserStorage[_converse.storage](
+                              b64_sha1(`converse.newroompanel${_converse.bare_jid}`))
+                      }))()
+                  });
+                  this.newroompanel.insertIntoDOM().model.fetch();
+                  if (!this.newroompanel.model.get('nick')) {
+                      this.newroompanel.model.save({
+                          nick: Strophe.getNodeFromJid(_converse.bare_jid)
+                      });
+                  }
+                  _converse.emit('newRoomPanelRendered');
+              },
 
                 renderContactsPanel () {
                     const { _converse } = this.__super__;
@@ -187,6 +212,7 @@
                     this.__super__.renderContactsPanel.apply(this, arguments);
                     if (_converse.allow_muc) {
                         this.renderRoomsPanel();
+                        this.renderNewRoomPanel();
                     }
                 },
 
@@ -198,7 +224,8 @@
                 },
 
                 getMUCDomainFromDisco () {
-                    /* Check whether service discovery for the user's domain
+                    /*
+                     * Check whether service discovery for the user's domain
                      * returned MUC information and use that to automatically
                      * set the MUC domain for the "Rooms" panel of the
                      * controlbox.
@@ -206,7 +233,8 @@
                     const { _converse } = this.__super__;
                     _converse.api.waitUntil('discoInitialized').then(() => {
                         _converse.api.listen.on('serviceDiscovered', this.featureAdded, this);
-                        // Features could have been added before the controlbox was
+                        // Features could have been added before the controlbox
+                        // was
                         // initialized. We're only interested in MUC
                         const entity = _converse.disco_entities[_converse.domain];
                         if (!_.isUndefined(entity)) {
@@ -257,7 +285,8 @@
         },
 
         initialize () {
-            /* The initialize function gets called as soon as the plugin is
+            /*
+             * The initialize function gets called as soon as the plugin is
              * loaded by converse.js's plugin machinery.
              */
             const { _converse } = this,
@@ -268,27 +297,39 @@
             // If called before, we won't know what language the user wants,
             // and it'll fall back to English.
 
-            /* http://xmpp.org/extensions/xep-0045.html
-             * ----------------------------------------
-             * 100 message      Entering a room         Inform user that any occupant is allowed to see the user's full JID
-             * 101 message (out of band)                Affiliation change  Inform user that his or her affiliation changed while not in the room
-             * 102 message      Configuration change    Inform occupants that room now shows unavailable members
-             * 103 message      Configuration change    Inform occupants that room now does not show unavailable members
-             * 104 message      Configuration change    Inform occupants that a non-privacy-related room configuration change has occurred
-             * 110 presence     Any room presence       Inform user that presence refers to one of its own room occupants
-             * 170 message or initial presence          Configuration change    Inform occupants that room logging is now enabled
-             * 171 message      Configuration change    Inform occupants that room logging is now disabled
-             * 172 message      Configuration change    Inform occupants that the room is now non-anonymous
-             * 173 message      Configuration change    Inform occupants that the room is now semi-anonymous
-             * 174 message      Configuration change    Inform occupants that the room is now fully-anonymous
-             * 201 presence     Entering a room         Inform user that a new room has been created
-             * 210 presence     Entering a room         Inform user that the service has assigned or modified the occupant's roomnick
-             * 301 presence     Removal from room       Inform user that he or she has been banned from the room
-             * 303 presence     Exiting a room          Inform all occupants of new room nickname
-             * 307 presence     Removal from room       Inform user that he or she has been kicked from the room
-             * 321 presence     Removal from room       Inform user that he or she is being removed from the room because of an affiliation change
-             * 322 presence     Removal from room       Inform user that he or she is being removed from the room because the room has been changed to members-only and the user is not a member
-             * 332 presence     Removal from room       Inform user that he or she is being removed from the room because of a system shutdown
+            /*
+             * http://xmpp.org/extensions/xep-0045.html
+             * ---------------------------------------- 100 message Entering a
+             * room Inform user that any occupant is allowed to see the user's
+             * full JID 101 message (out of band) Affiliation change Inform user
+             * that his or her affiliation changed while not in the room 102
+             * message Configuration change Inform occupants that room now shows
+             * unavailable members 103 message Configuration change Inform
+             * occupants that room now does not show unavailable members 104
+             * message Configuration change Inform occupants that a
+             * non-privacy-related room configuration change has occurred 110
+             * presence Any room presence Inform user that presence refers to
+             * one of its own room occupants 170 message or initial presence
+             * Configuration change Inform occupants that room logging is now
+             * enabled 171 message Configuration change Inform occupants that
+             * room logging is now disabled 172 message Configuration change
+             * Inform occupants that the room is now non-anonymous 173 message
+             * Configuration change Inform occupants that the room is now
+             * semi-anonymous 174 message Configuration change Inform occupants
+             * that the room is now fully-anonymous 201 presence Entering a room
+             * Inform user that a new room has been created 210 presence
+             * Entering a room Inform user that the service has assigned or
+             * modified the occupant's roomnick 301 presence Removal from room
+             * Inform user that he or she has been banned from the room 303
+             * presence Exiting a room Inform all occupants of new room nickname
+             * 307 presence Removal from room Inform user that he or she has
+             * been kicked from the room 321 presence Removal from room Inform
+             * user that he or she is being removed from the room because of an
+             * affiliation change 322 presence Removal from room Inform user
+             * that he or she is being removed from the room because the room
+             * has been changed to members-only and the user is not a member 332
+             * presence Removal from room Inform user that he or she is being
+             * removed from the room because of a system shutdown
              */
             _converse.muc = {
                 info_messages: {
@@ -313,16 +354,17 @@
                 },
 
                 action_info_messages: {
-                    /* XXX: Note the triple underscore function and not double
-                    * underscore.
-                    *
-                    * This is a hack. We can't pass the strings to __ because we
-                    * don't yet know what the variable to interpolate is.
-                    *
-                    * Triple underscore will just return the string again, but we
-                    * can then at least tell gettext to scan for it so that these
-                    * strings are picked up by the translation machinery.
-                    */
+                    /*
+                     * XXX: Note the triple underscore function and not double
+                     * underscore.
+                     * 
+                     * This is a hack. We can't pass the strings to __ because
+                     * we don't yet know what the variable to interpolate is.
+                     * 
+                     * Triple underscore will just return the string again, but
+                     * we can then at least tell gettext to scan for it so that
+                     * these strings are picked up by the translation machinery.
+                     */
                     301: ___("%1$s has been banned"),
                     303: ___("%1$s's nickname has changed"),
                     307: ___("%1$s has been kicked out"),
@@ -345,7 +387,7 @@
                 allow_muc_invitations: true,
                 auto_join_on_invite: false,
                 auto_join_rooms: [],
-                auto_list_rooms: false,
+                auto_list_rooms: true,
                 hide_muc_server: false,
                 muc_disable_moderator_commands: false,
                 muc_domain: undefined,
@@ -362,11 +404,10 @@
                 
             });
             _converse.api.promises.add('roomsPanelRendered');
-
             _converse.openChatRoom = function (settings, bring_to_foreground) {
-                /* Opens a chat room, making sure that certain attributes
-                 * are correct, for example that the "type" is set to
-                 * "chatroom".
+                /*
+                 * Opens a chat room, making sure that certain attributes are
+                 * correct, for example that the "type" is set to "chatroom".
                  */
                 if (_.isUndefined(settings.jid)) {
                     throw new Error("openChatRoom needs to be called with a JID");
@@ -384,14 +425,18 @@
                         _.clone(_converse.ChatBox.prototype.defaults),
                         _.zipObject(ROOM_FEATURES, _.map(ROOM_FEATURES, _.stubFalse)),
                         {
-                          // For group chats, we distinguish between generally unread
-                          // messages and those ones that specifically mention the
+                          // For group chats, we distinguish between generally
+                          // unread
+                          // messages and those ones that specifically mention
+                          // the
                           // user.
                           //
                           // To keep things simple, we reuse `num_unread` from
                           // _converse.ChatBox to indicate unread messages which
-                          // mention the user and `num_unread_general` to indicate
-                          // generally unread messages (which *includes* mentions!).
+                          // mention the user and `num_unread_general` to
+                          // indicate
+                          // generally unread messages (which *includes*
+                          // mentions!).
                           'num_unread_general': 0,
 
                           'affiliation': null,
@@ -406,21 +451,21 @@
                 },
 
                 isUserMentioned (message) {
-                    /* Returns a boolean to indicate whether the current user
+                    /*
+                     * Returns a boolean to indicate whether the current user
                      * was mentioned in a message.
-                     *
-                     * Parameters:
-                     *  (String): The text message
+                     * 
+                     * Parameters: (String): The text message
                      */
                     return (new RegExp(`\\b${this.get('nick')}\\b`)).test(message);
                 },
 
                 incrementUnreadMsgCounter (stanza) {
-                    /* Given a newly received message, update the unread counter if
-                     * necessary.
-                     *
-                     * Parameters:
-                     *  (XMLElement): The <messsage> stanza
+                    /*
+                     * Given a newly received message, update the unread counter
+                     * if necessary.
+                     * 
+                     * Parameters: (XMLElement): The <messsage> stanza
                      */
                     const body = stanza.querySelector('body');
                     if (_.isNull(body)) {
@@ -444,7 +489,8 @@
             });
 
             _converse.ChatRoomView = _converse.ChatBoxView.extend({
-                /* Backbone View which renders a chat room, based upon the view
+                /*
+                 * Backbone View which renders a chat room, based upon the view
                  * for normal one-on-one chat boxes.
                  */
                 length: 300,
@@ -511,7 +557,8 @@
                 },
 
                 renderChatArea () {
-                    /* Render the UI container in which chat room messages will
+                    /*
+                     * Render the UI container in which chat room messages will
                      * appear.
                      */
                     if (!this.$('.chat-area').length) {
@@ -532,7 +579,8 @@
                 },
 
                 createOccupantsView () {
-                    /* Create the ChatRoomOccupantsView Backbone.View
+                    /*
+                     * Create the ChatRoomOccupantsView Backbone.View
                      */
                     const model = new _converse.ChatRoomOccupants();
                     model.chatroomview = this;
@@ -545,7 +593,8 @@
                 },
 
                 generateHeadingHTML () {
-                    /* Returns the heading HTML to be rendered.
+                    /*
+                     * Returns the heading HTML to be rendered.
                      */
                     return tpl_chatroom_head(
                         _.extend(this.model.toJSON(), {
@@ -557,9 +606,10 @@
                 },
 
                 afterShown () {
-                    /* Override from converse-chatview, specifically to avoid
+                    /*
+                     * Override from converse-chatview, specifically to avoid
                      * the 'active' chat state from being sent out prematurely.
-                     *
+                     * 
                      * This is instead done in `afterConnected` below.
                      */
                     if (this.model.collection && this.model.collection.browserStorage) {
@@ -603,14 +653,16 @@
                 },
 
                 close (ev) {
-                    /* Close this chat box, which implies leaving the room as
+                    /*
+                     * Close this chat box, which implies leaving the room as
                      * well.
                      */
                     this.leave();
                 },
 
                 toggleOccupants (ev, preserve_state) {
-                    /* Show or hide the right sidebar containing the chat
+                    /*
+                     * Show or hide the right sidebar containing the chat
                      * occupants (and the invite widget).
                      */
                     if (ev) {
@@ -618,7 +670,8 @@
                         ev.stopPropagation();
                     }
                     if (preserve_state) {
-                        // Bit of a hack, to make sure that the sidebar's state doesn't change
+                        // Bit of a hack, to make sure that the sidebar's state
+                        // doesn't change
                         this.model.set({hidden_occupants: !this.model.get('hidden_occupants')});
                     }
                     if (!this.model.get('hidden_occupants')) {
@@ -637,27 +690,28 @@
                 },
 
                 onOccupantClicked (ev) {
-                    /* When an occupant is clicked, insert their nickname into
+                    /*
+                     * When an occupant is clicked, insert their nickname into
                      * the chat textarea input.
                      */
                     this.insertIntoTextArea(ev.target.textContent);
                 },
 
                 requestMemberList (chatroom_jid, affiliation) {
-                    /* Send an IQ stanza to the server, asking it for the
+                    /*
+                     * Send an IQ stanza to the server, asking it for the
                      * member-list of this room.
-                     *
-                     * See: http://xmpp.org/extensions/xep-0045.html#modifymember
-                     *
-                     * Parameters:
-                     *  (String) chatroom_jid: The JID of the chatroom for
-                     *      which the member-list is being requested
-                     *  (String) affiliation: The specific member list to
-                     *      fetch. 'admin', 'owner' or 'member'.
-                     *
-                     * Returns:
-                     *  A promise which resolves once the list has been
-                     *  retrieved.
+                     * 
+                     * See:
+                     * http://xmpp.org/extensions/xep-0045.html#modifymember
+                     * 
+                     * Parameters: (String) chatroom_jid: The JID of the
+                     * chatroom for which the member-list is being requested
+                     * (String) affiliation: The specific member list to fetch.
+                     * 'admin', 'owner' or 'member'.
+                     * 
+                     * Returns: A promise which resolves once the list has been
+                     * retrieved.
                      */
                     return new Promise((resolve, reject) => {
                         affiliation = affiliation || 'member';
@@ -669,8 +723,9 @@
                 },
 
                 parseMemberListIQ (iq) {
-                    /* Given an IQ stanza with a member list, create an array of member
-                     * objects.
+                    /*
+                     * Given an IQ stanza with a member list, create an array of
+                     * member objects.
                      */
                     return _.map(
                         $(iq).find(`query[xmlns="${Strophe.NS.MUC_ADMIN}"] item`),
@@ -682,31 +737,30 @@
                 },
 
                 computeAffiliationsDelta (exclude_existing, remove_absentees, new_list, old_list) {
-                    /* Given two lists of objects with 'jid', 'affiliation' and
-                     * 'reason' properties, return a new list containing
-                     * those objects that are new, changed or removed
-                     * (depending on the 'remove_absentees' boolean).
-                     *
+                    /*
+                     * Given two lists of objects with 'jid', 'affiliation' and
+                     * 'reason' properties, return a new list containing those
+                     * objects that are new, changed or removed (depending on
+                     * the 'remove_absentees' boolean).
+                     * 
                      * The affiliations for new and changed members stay the
-                     * same, for removed members, the affiliation is set to 'none'.
-                     *
+                     * same, for removed members, the affiliation is set to
+                     * 'none'.
+                     * 
                      * The 'reason' property is not taken into account when
                      * comparing whether affiliations have been changed.
-                     *
-                     * Parameters:
-                     *  (Boolean) exclude_existing: Indicates whether JIDs from
-                     *      the new list which are also in the old list
-                     *      (regardless of affiliation) should be excluded
-                     *      from the delta. One reason to do this
-                     *      would be when you want to add a JID only if it
-                     *      doesn't have *any* existing affiliation at all.
-                     *  (Boolean) remove_absentees: Indicates whether JIDs
-                     *      from the old list which are not in the new list
-                     *      should be considered removed and therefore be
-                     *      included in the delta with affiliation set
-                     *      to 'none'.
-                     *  (Array) new_list: Array containing the new affiliations
-                     *  (Array) old_list: Array containing the old affiliations
+                     * 
+                     * Parameters: (Boolean) exclude_existing: Indicates whether
+                     * JIDs from the new list which are also in the old list
+                     * (regardless of affiliation) should be excluded from the
+                     * delta. One reason to do this would be when you want to
+                     * add a JID only if it doesn't have *any* existing
+                     * affiliation at all. (Boolean) remove_absentees: Indicates
+                     * whether JIDs from the old list which are not in the new
+                     * list should be considered removed and therefore be
+                     * included in the delta with affiliation set to 'none'.
+                     * (Array) new_list: Array containing the new affiliations
+                     * (Array) old_list: Array containing the old affiliations
                      */
                     const new_jids = _.map(new_list, 'jid');
                     const old_jids = _.map(old_list, 'jid');
@@ -739,14 +793,14 @@
                 },
 
                 sendAffiliationIQ (chatroom_jid, affiliation, member) {
-                    /* Send an IQ stanza specifying an affiliation change.
-                     *
-                     * Paremeters:
-                     *  (String) chatroom_jid: JID of the relevant room
-                     *  (String) affiliation: affiliation (could also be stored
-                     *      on the member object).
-                     *  (Object) member: Map containing the member's jid and
-                     *      optionally a reason and affiliation.
+                    /*
+                     * Send an IQ stanza specifying an affiliation change.
+                     * 
+                     * Paremeters: (String) chatroom_jid: JID of the relevant
+                     * room (String) affiliation: affiliation (could also be
+                     * stored on the member object). (Object) member: Map
+                     * containing the member's jid and optionally a reason and
+                     * affiliation.
                      */
                     return new Promise((resolve, reject) => {
                         const iq = $iq({to: chatroom_jid, type: "set"})
@@ -763,26 +817,25 @@
                 },
 
                 setAffiliation (affiliation, members) {
-                    /* Send IQ stanzas to the server to set an affiliation for
+                    /*
+                     * Send IQ stanzas to the server to set an affiliation for
                      * the provided JIDs.
-                     *
-                     * See: http://xmpp.org/extensions/xep-0045.html#modifymember
-                     *
+                     * 
+                     * See:
+                     * http://xmpp.org/extensions/xep-0045.html#modifymember
+                     * 
                      * XXX: Prosody doesn't accept multiple JIDs' affiliations
-                     * being set in one IQ stanza, so as a workaround we send
-                     * a separate stanza for each JID.
-                     * Related ticket: https://prosody.im/issues/issue/795
-                     *
-                     * Parameters:
-                     *  (String) affiliation: The affiliation
-                     *  (Object) members: A map of jids, affiliations and
-                     *      optionally reasons. Only those entries with the
-                     *      same affiliation as being currently set will be
-                     *      considered.
-                     *
-                     * Returns:
-                     *  A promise which resolves and fails depending on the
-                     *  XMPP server response.
+                     * being set in one IQ stanza, so as a workaround we send a
+                     * separate stanza for each JID. Related ticket:
+                     * https://prosody.im/issues/issue/795
+                     * 
+                     * Parameters: (String) affiliation: The affiliation
+                     * (Object) members: A map of jids, affiliations and
+                     * optionally reasons. Only those entries with the same
+                     * affiliation as being currently set will be considered.
+                     * 
+                     * Returns: A promise which resolves and fails depending on
+                     * the XMPP server response.
                      */
                     members = _.filter(members, (member) =>
                         // We only want those members who have the right
@@ -799,34 +852,37 @@
                 },
 
                 setAffiliations (members) {
-                    /* Send IQ stanzas to the server to modify the
-                     * affiliations in this room.
-                     *
-                     * See: http://xmpp.org/extensions/xep-0045.html#modifymember
-                     *
-                     * Parameters:
-                     *  (Object) members: A map of jids, affiliations and optionally reasons
-                     *  (Function) onSuccess: callback for a succesful response
-                     *  (Function) onError: callback for an error response
+                    /*
+                     * Send IQ stanzas to the server to modify the affiliations
+                     * in this room.
+                     * 
+                     * See:
+                     * http://xmpp.org/extensions/xep-0045.html#modifymember
+                     * 
+                     * Parameters: (Object) members: A map of jids, affiliations
+                     * and optionally reasons (Function) onSuccess: callback for
+                     * a succesful response (Function) onError: callback for an
+                     * error response
                      */
                     const affiliations = _.uniq(_.map(members, 'affiliation'));
                     _.each(affiliations, _.partial(this.setAffiliation.bind(this), _, members));
                 },
 
                 marshallAffiliationIQs () {
-                    /* Marshall a list of IQ stanzas into a map of JIDs and
+                    /*
+                     * Marshall a list of IQ stanzas into a map of JIDs and
                      * affiliations.
-                     *
-                     * Parameters:
-                     *  Any amount of XMLElement objects, representing the IQ
-                     *  stanzas.
+                     * 
+                     * Parameters: Any amount of XMLElement objects,
+                     * representing the IQ stanzas.
                      */
                     return _.flatMap(arguments, this.parseMemberListIQ);
                 },
 
                 getJidsWithAffiliations (affiliations) {
-                    /* Returns a map of JIDs that have the affiliations
-                     * as provided.
+                    /*
+                     * Returns a map of JIDs that have the affiliations as
+                     * provided.
                      */
                     if (_.isString(affiliations)) {
                         affiliations = [affiliations];
@@ -841,22 +897,21 @@
                 },
 
                 updateMemberLists (members, affiliations, deltaFunc) {
-                    /* Fetch the lists of users with the given affiliations.
-                     * Then compute the delta between those users and
-                     * the passed in members, and if it exists, send the delta
-                     * to the XMPP server to update the member list.
-                     *
-                     * Parameters:
-                     *  (Object) members: Map of member jids and affiliations.
-                     *  (String|Array) affiliation: An array of affiliations or
-                     *      a string if only one affiliation.
-                     *  (Function) deltaFunc: The function to compute the delta
-                     *      between old and new member lists.
-                     *
-                     * Returns:
-                     *  A promise which is resolved once the list has been
-                     *  updated or once it's been established there's no need
-                     *  to update the list.
+                    /*
+                     * Fetch the lists of users with the given affiliations.
+                     * Then compute the delta between those users and the passed
+                     * in members, and if it exists, send the delta to the XMPP
+                     * server to update the member list.
+                     * 
+                     * Parameters: (Object) members: Map of member jids and
+                     * affiliations. (String|Array) affiliation: An array of
+                     * affiliations or a string if only one affiliation.
+                     * (Function) deltaFunc: The function to compute the delta
+                     * between old and new member lists.
+                     * 
+                     * Returns: A promise which is resolved once the list has
+                     * been updated or once it's been established there's no
+                     * need to update the list.
                      */
                     this.getJidsWithAffiliations(affiliations).then((old_members) => {
                         this.setAffiliations(deltaFunc(members, old_members));
@@ -864,11 +919,12 @@
                 },
 
                 directInvite (recipient, reason) {
-                    /* Send a direct invitation as per XEP-0249
-                     *
-                     * Parameters:
-                     *    (String) recipient - JID of the person being invited
-                     *    (String) reason - Optional reason for the invitation
+                    /*
+                     * Send a direct invitation as per XEP-0249
+                     * 
+                     * Parameters: (String) recipient - JID of the person being
+                     * invited (String) reason - Optional reason for the
+                     * invitation
                      */
                     if (this.model.get('membersonly')) {
                         // When inviting to a members-only room, we first add
@@ -903,9 +959,10 @@
                 },
 
                 handleChatStateMessage (message) {
-                    /* Override the method on the ChatBoxView base class to
+                    /*
+                     * Override the method on the ChatBoxView base class to
                      * ignore <gone/> notifications in groupchats.
-                     *
+                     * 
                      * As laid out in the business rules in XEP-0085
                      * http://xmpp.org/extensions/xep-0085.html#bizrules-groupchat
                      */
@@ -921,9 +978,10 @@
                 },
 
                 sendChatState () {
-                    /* Sends a message with the status of the user in this chat session
-                     * as taken from the 'chat_state' attribute of the chat box.
-                     * See XEP-0085 Chat State Notifications.
+                    /*
+                     * Sends a message with the status of the user in this chat
+                     * session as taken from the 'chat_state' attribute of the
+                     * chat box. See XEP-0085 Chat State Notifications.
                      */
                     if (this.model.get('connection_status') !==  converse.ROOMSTATUS.ENTERED) {
                         return;
@@ -942,11 +1000,11 @@
                 },
 
                 sendChatRoomMessage (text) {
-                    /* Constuct a message stanza to be sent to this chat room,
+                    /*
+                     * Constuct a message stanza to be sent to this chat room,
                      * and send it to the server.
-                     *
-                     * Parameters:
-                     *  (String) text: The message text to be sent.
+                     * 
+                     * Parameters: (String) text: The message text to be sent.
                      */
                     const msgid = _converse.connection.getUniqueId();
                     const msg = $msg({
@@ -974,7 +1032,8 @@
                 },
 
                 validateRoleChangeCommand (command, args) {
-                    /* Check that a command to change a chat room user's role or
+                    /*
+                     * Check that a command to change a chat room user's role or
                      * affiliation has anough arguments.
                      */
                     // TODO check if first argument is valid
@@ -990,7 +1049,8 @@
                 },
 
                 clearChatRoomMessages (ev) {
-                    /* Remove all messages from the chat room UI.
+                    /*
+                     * Remove all messages from the chat room UI.
                      */
                     if (!_.isUndefined(ev)) { ev.stopPropagation(); }
                     const result = confirm(__("Are you sure you want to clear the messages from this room?"));
@@ -1005,11 +1065,11 @@
                 },
 
                 onMessageSubmitted (text) {
-                    /* Gets called when the user presses enter to send off a
+                    /*
+                     * Gets called when the user presses enter to send off a
                      * message in a chat room.
-                     *
-                     * Parameters:
-                     *    (String) text - The message text.
+                     * 
+                     * Parameters: (String) text - The message text.
                      */
                     if (_converse.muc_disable_moderator_commands) {
                         return this.sendChatRoomMessage(text);
@@ -1130,10 +1190,10 @@
                 },
 
                 handleMUCMessage (stanza) {
-                    /* Handler for all MUC messages sent to this chat room.
-                     *
-                     * Parameters:
-                     *  (XMLElement) stanza: The message stanza.
+                    /*
+                     * Handler for all MUC messages sent to this chat room.
+                     * 
+                     * Parameters: (XMLElement) stanza: The message stanza.
                      */
                     const configuration_changed = stanza.querySelector("status[code='104']");
                     const logging_enabled = stanza.querySelector("status[code='170']");
@@ -1150,12 +1210,13 @@
                 },
 
                 getRoomJIDAndNick (nick) {
-                    /* Utility method to construct the JID for the current user
+                    /*
+                     * Utility method to construct the JID for the current user
                      * as occupant of the room.
-                     *
+                     * 
                      * This is the room JID, with the user's nick added at the
                      * end.
-                     *
+                     * 
                      * For example: room@conference.example.org/nickname
                      */
                     if (nick) {
@@ -1170,8 +1231,8 @@
                 },
 
                 registerHandlers () {
-                    /* Register presence and message handlers for this chat
-                     * room
+                    /*
+                     * Register presence and message handlers for this chat room
                      */
                     const room_jid = this.model.get('jid');
                     this.removeHandlers();
@@ -1188,7 +1249,8 @@
                 },
 
                 removeHandlers () {
-                    /* Remove the presence and message handlers that were
+                    /*
+                     * Remove the presence and message handlers that were
                      * registered for this chat room.
                      */
                     if (this.message_handler) {
@@ -1203,12 +1265,11 @@
                 },
 
                 join (nick, password) {
-                    /* Join the chat room.
-                     *
-                     * Parameters:
-                     *  (String) nick: The user's nickname
-                     *  (String) password: Optional password, if required by
-                     *      the room.
+                    /*
+                     * Join the chat room.
+                     * 
+                     * Parameters: (String) nick: The user's nickname (String)
+                     * password: Optional password, if required by the room.
                      */
                     nick = nick ? nick : this.model.get('nick');
                     if (!nick) {
@@ -1245,11 +1306,11 @@
                 },
 
                 leave(exit_msg) {
-                    /* Leave the chat room.
-                     *
-                     * Parameters:
-                     *  (String) exit_msg: Optional message to indicate your
-                     *      reason for leaving.
+                    /*
+                     * Leave the chat room.
+                     * 
+                     * Parameters: (String) exit_msg: Optional message to
+                     * indicate your reason for leaving.
                      */
                     this.hide();
                     this.occupantsview.model.reset();
@@ -1266,15 +1327,15 @@
                 },
 
                 renderConfigurationForm (stanza) {
-                    /* Renders a form given an IQ stanza containing the current
+                    /*
+                     * Renders a form given an IQ stanza containing the current
                      * room configuration.
-                     *
-                     * Returns a promise which resolves once the user has
-                     * either submitted the form, or canceled it.
-                     *
-                     * Parameters:
-                     *  (XMLElement) stanza: The IQ stanza containing the room
-                     *      config.
+                     * 
+                     * Returns a promise which resolves once the user has either
+                     * submitted the form, or canceled it.
+                     * 
+                     * Parameters: (XMLElement) stanza: The IQ stanza containing
+                     * the room config.
                      */
                     const $body = this.$('.chatroom-body');
                     $body.children().addClass('hidden');
@@ -1315,18 +1376,17 @@
                 },
 
                 sendConfiguration(config, onSuccess, onError) {
-                    /* Send an IQ stanza with the room configuration.
-                     *
-                     * Parameters:
-                     *  (Array) config: The room configuration
-                     *  (Function) onSuccess: Callback upon succesful IQ response
-                     *      The first parameter passed in is IQ containing the
-                     *      room configuration.
-                     *      The second is the response IQ from the server.
-                     *  (Function) onError: Callback upon error IQ response
-                     *      The first parameter passed in is IQ containing the
-                     *      room configuration.
-                     *      The second is the response IQ from the server.
+                    /*
+                     * Send an IQ stanza with the room configuration.
+                     * 
+                     * Parameters: (Array) config: The room configuration
+                     * (Function) onSuccess: Callback upon succesful IQ response
+                     * The first parameter passed in is IQ containing the room
+                     * configuration. The second is the response IQ from the
+                     * server. (Function) onError: Callback upon error IQ
+                     * response The first parameter passed in is IQ containing
+                     * the room configuration. The second is the response IQ
+                     * from the server.
                      */
                     const iq = $iq({to: this.model.get('jid'), type: "set"})
                         .c("query", {xmlns: Strophe.NS.MUC_OWNER})
@@ -1338,14 +1398,15 @@
                 },
 
                 saveConfiguration (form) {
-                    /* Submit the room configuration form by sending an IQ
+                    /*
+                     * Submit the room configuration form by sending an IQ
                      * stanza to the server.
-                     *
-                     * Returns a promise which resolves once the XMPP server
-                     * has return a response IQ.
-                     *
-                     * Parameters:
-                     *  (HTMLElement) form: The configuration form DOM element.
+                     * 
+                     * Returns a promise which resolves once the XMPP server has
+                     * return a response IQ.
+                     * 
+                     * Parameters: (HTMLElement) form: The configuration form
+                     * DOM element.
                      */
                     return new Promise((resolve, reject) => {
                         const $inputs = $(form).find(':input:not([type=button]):not([type=submit])'),
@@ -1362,15 +1423,15 @@
                 },
 
                 autoConfigureChatRoom () {
-                    /* Automatically configure room based on the
-                     * 'roomconfig' data on this view's model.
-                     *
+                    /*
+                     * Automatically configure room based on the 'roomconfig'
+                     * data on this view's model.
+                     * 
                      * Returns a promise which resolves once a response IQ has
                      * been received.
-                     *
-                     * Parameters:
-                     *  (XMLElement) stanza: IQ stanza from the server,
-                     *       containing the configuration.
+                     * 
+                     * Parameters: (XMLElement) stanza: IQ stanza from the
+                     * server, containing the configuration.
                      */
                     const that = this;
                     return new Promise((resolve, reject) => {
@@ -1390,7 +1451,8 @@
                                             value = config[fieldname] ? 1 : 0;
                                             break;
                                         case 'list-multi':
-                                            // TODO: we don't yet handle "list-multi" types
+                                            // TODO: we don't yet handle
+                                            // "list-multi" types
                                             value = field.innerHTML;
                                             break;
                                         default:
@@ -1408,7 +1470,8 @@
                 },
 
                 cancelConfiguration () {
-                    /* Remove the configuration form without submitting and
+                    /*
+                     * Remove the configuration form without submitting and
                      * return to the chat view.
                      */
                     this.$el.find('div.chatroom-form-container').hide(
@@ -1419,12 +1482,13 @@
                 },
 
                 fetchRoomConfiguration (handler) {
-                    /* Send an IQ stanza to fetch the room configuration data.
-                     * Returns a promise which resolves once the response IQ
-                     * has been received.
-                     *
-                     * Parameters:
-                     *  (Function) handler: The handler for the response IQ
+                    /*
+                     * Send an IQ stanza to fetch the room configuration data.
+                     * Returns a promise which resolves once the response IQ has
+                     * been received.
+                     * 
+                     * Parameters: (Function) handler: The handler for the
+                     * response IQ
                      */
                     return new Promise((resolve, reject) => {
                         _converse.connection.sendIQ(
@@ -1444,24 +1508,21 @@
                 },
 
                 parseRoomFeatures (iq) {
-                    /* See http://xmpp.org/extensions/xep-0045.html#disco-roominfo
-                     *
-                     *  <identity
-                     *      category='conference'
-                     *      name='A Dark Cave'
-                     *      type='text'/>
-                     *  <feature var='http://jabber.org/protocol/muc'/>
-                     *  <feature var='muc_passwordprotected'/>
-                     *  <feature var='muc_hidden'/>
-                     *  <feature var='muc_temporary'/>
-                     *  <feature var='muc_open'/>
-                     *  <feature var='muc_unmoderated'/>
-                     *  <feature var='muc_nonanonymous'/>
-                     *  <feature var='urn:xmpp:mam:0'/>
+                    /*
+                     * See
+                     * http://xmpp.org/extensions/xep-0045.html#disco-roominfo
+                     * 
+                     * <identity category='conference' name='A Dark Cave'
+                     * type='text'/> <feature
+                     * var='http://jabber.org/protocol/muc'/> <feature
+                     * var='muc_passwordprotected'/> <feature var='muc_hidden'/>
+                     * <feature var='muc_temporary'/> <feature var='muc_open'/>
+                     * <feature var='muc_unmoderated'/> <feature
+                     * var='muc_nonanonymous'/> <feature var='urn:xmpp:mam:0'/>
                      */
                     const features = {
                         'features_fetched': true,
-                        'name': Strophe.unescapeNode(Strophe.getNodeFromJid(jid))
+                        'name': name || Strophe.unescapeNode(Strophe.getNodeFromJid(jid))
                     }
                     _.each(iq.querySelectorAll('feature'), function (field) {
                         const fieldname = field.getAttribute('var');
@@ -1481,8 +1542,9 @@
                 },
 
                 getRoomFeatures () {
-                    /* Fetch the room disco info, parse it and then
-                     * save it on the Backbone.Model of this chat rooms.
+                    /*
+                     * Fetch the room disco info, parse it and then save it on
+                     * the Backbone.Model of this chat rooms.
                      */
                     return new Promise((resolve, reject) => {
                         _converse.connection.disco.info(
@@ -1496,19 +1558,19 @@
                 },
 
                 getAndRenderConfigurationForm (ev) {
-                    /* Start the process of configuring a chat room, either by
+                    /*
+                     * Start the process of configuring a chat room, either by
                      * rendering a configuration form, or by auto-configuring
                      * based on the "roomconfig" data stored on the
                      * Backbone.Model.
-                     *
+                     * 
                      * Stores the new configuration on the Backbone.Model once
                      * completed.
-                     *
-                     * Paremeters:
-                     *  (Event) ev: DOM event that might be passed in if this
-                     *      method is called due to a user action. In this
-                     *      case, auto-configure won't happen, regardless of
-                     *      the settings.
+                     * 
+                     * Paremeters: (Event) ev: DOM event that might be passed in
+                     * if this method is called due to a user action. In this
+                     * case, auto-configure won't happen, regardless of the
+                     * settings.
                      */
                     this.showSpinner();
                     this.fetchRoomConfiguration().then(
@@ -1516,7 +1578,8 @@
                 },
 
                 submitNickname (ev) {
-                    /* Get the nickname value from the form and then join the
+                    /*
+                     * Get the nickname value from the form and then join the
                      * chat room with it.
                      */
                     ev.preventDefault();
@@ -1535,10 +1598,10 @@
                 },
 
                 checkForReservedNick () {
-                    /* User service-discovery to ask the XMPP server whether
-                     * this user has a reserved nickname for this room.
-                     * If so, we'll use that, otherwise we render the nickname
-                     * form.
+                    /*
+                     * User service-discovery to ask the XMPP server whether
+                     * this user has a reserved nickname for this room. If so,
+                     * we'll use that, otherwise we render the nickname form.
                      */
                     this.showSpinner();
                     _converse.connection.sendIQ(
@@ -1557,14 +1620,13 @@
                 },
 
                 onNickNameFound (iq) {
-                    /* We've received an IQ response from the server which
-                     * might contain the user's reserved nickname.
-                     * If no nickname is found we either render a form for
-                     * them to specify one, or we try to join the room with the
-                     * node of the user's JID.
-                     *
-                     * Parameters:
-                     *  (XMLElement) iq: The received IQ stanza
+                    /*
+                     * We've received an IQ response from the server which might
+                     * contain the user's reserved nickname. If no nickname is
+                     * found we either render a form for them to specify one, or
+                     * we try to join the room with the node of the user's JID.
+                     * 
+                     * Parameters: (XMLElement) iq: The received IQ stanza
                      */
                     const nick = $(iq)
                         .find('query[node="x-roomuser-item"] identity')
@@ -1585,10 +1647,11 @@
                 },
 
                 getDefaultNickName () {
-                    /* The default nickname (used when muc_nickname_from_jid is true)
-                     * is the node part of the user's JID.
-                     * We put this in a separate method so that it can be
-                     * overridden by plugins.
+                    /*
+                     * The default nickname (used when muc_nickname_from_jid is
+                     * true) is the node part of the user's JID. We put this in
+                     * a separate method so that it can be overridden by
+                     * plugins.
                      */
                     if (_converse.muc_nickname) {
                       return _converse.muc_nickname;
@@ -1598,11 +1661,12 @@
                 },
 
                 onNicknameClash (presence) {
-                    /* When the nickname is already taken, we either render a
-                     * form for the user to choose a new nickname, or we
-                     * try to make the nickname unique by adding an integer to
-                     * it. So john will become john-2, and then john-3 and so on.
-                     *
+                    /*
+                     * When the nickname is already taken, we either render a
+                     * form for the user to choose a new nickname, or we try to
+                     * make the nickname unique by adding an integer to it. So
+                     * john will become john-2, and then john-3 and so on.
+                     * 
                      * Which option is take depends on the value of
                      * muc_nickname_from_jid.
                      */
@@ -1624,7 +1688,8 @@
                 },
 
                 renderNicknameForm (message) {
-                    /* Render a form which allows the user to choose their
+                    /*
+                     * Render a form which allows the user to choose their
                      * nickname.
                      */
                     this.$('.chatroom-body').children().addClass('hidden');
@@ -1673,11 +1738,11 @@
                 },
 
                 getMessageFromStatus (stat, stanza, is_self) {
-                    /* Parameters:
-                     *  (XMLElement) stat: A <status> element.
-                     *  (Boolean) is_self: Whether the element refers to the
-                     *                     current user.
-                     *  (XMLElement) stanza: The original stanza received.
+                    /*
+                     * Parameters: (XMLElement) stat: A <status> element.
+                     * (Boolean) is_self: Whether the element refers to the
+                     * current user. (XMLElement) stanza: The original stanza
+                     * received.
                      */
                     const code = stat.getAttribute('code');
                     if (code === '110') { return; }
@@ -1702,11 +1767,11 @@
                 },
 
                 saveAffiliationAndRole (pres) {
-                    /* Parse the presence stanza for the current user's
+                    /*
+                     * Parse the presence stanza for the current user's
                      * affiliation.
-                     *
-                     * Parameters:
-                     *  (XMLElement) pres: A <presence> stanza.
+                     * 
+                     * Parameters: (XMLElement) pres: A <presence> stanza.
                      */
                     const item = sizzle(`x[xmlns="${Strophe.NS.MUC_USER}"] item`, pres).pop();
                     const is_self = pres.querySelector("status[code='110']");
@@ -1723,11 +1788,13 @@
                 },
 
                 parseXUserElement (x, stanza, is_self) {
-                    /* Parse the passed-in <x xmlns='http://jabber.org/protocol/muc#user'>
-                     * element and construct a map containing relevant
-                     * information.
+                    /*
+                     * Parse the passed-in <x
+                     * xmlns='http://jabber.org/protocol/muc#user'> element and
+                     * construct a map containing relevant information.
                      */
-                    // 1. Get notification messages based on the <status> elements.
+                    // 1. Get notification messages based on the <status>
+                    // elements.
                     const statuses = x.querySelectorAll('status');
                     const mapper = _.partial(this.getMessageFromStatus, _, stanza, is_self);
                     const notification = {};
@@ -1735,7 +1802,8 @@
                     if (messages.length) {
                         notification.messages = messages;
                     }
-                    // 2. Get disconnection messages based on the <status> elements
+                    // 2. Get disconnection messages based on the <status>
+                    // elements
                     const codes = _.invokeMap(statuses, Element.prototype.getAttribute, 'code');
                     const disconnection_codes = _.intersection(codes, _.keys(_converse.muc.disconnect_messages));
                     const disconnected = is_self && disconnection_codes.length > 0;
@@ -1746,7 +1814,8 @@
                     // 3. Find the reason and actor from the <item> element
                     const item = x.querySelector('item');
                     // By using querySelector above, we assume here there is
-                    // one <item> per <x xmlns='http://jabber.org/protocol/muc#user'>
+                    // one <item> per <x
+                    // xmlns='http://jabber.org/protocol/muc#user'>
                     // element. This appears to be a safe assumption, since
                     // each <x/> element pertains to a single user.
                     if (!_.isNull(item)) {
@@ -1763,7 +1832,8 @@
                 },
 
                 displayNotificationsforUser (notification) {
-                    /* Given the notification object generated by
+                    /*
+                     * Given the notification object generated by
                      * parseXUserElement, display any relevant messages and
                      * information to the user.
                      */
@@ -1790,7 +1860,8 @@
                 },
 
                 getJoinLeaveMessages (stanza) {
-                    /* Parse the given stanza and return notification messages
+                    /*
+                     * Parse the given stanza and return notification messages
                      * for join/leave events.
                      */
                     // XXX: some mangling required to make the returned
@@ -1818,12 +1889,12 @@
                 },
 
                 showStatusMessages (stanza) {
-                    /* Check for status codes and communicate their purpose to the user.
-                     * See: http://xmpp.org/registrar/mucstatus.html
-                     *
-                     * Parameters:
-                     *  (XMLElement) stanza: The message or presence stanza
-                     *      containing the status codes.
+                    /*
+                     * Check for status codes and communicate their purpose to
+                     * the user. See: http://xmpp.org/registrar/mucstatus.html
+                     * 
+                     * Parameters: (XMLElement) stanza: The message or presence
+                     * stanza containing the status codes.
                      */
                     const elements = sizzle(`x[xmlns="${Strophe.NS.MUC_USER}"]`, stanza);
                     const is_self = stanza.querySelectorAll("status[code='110']").length;
@@ -1841,7 +1912,8 @@
                 },
 
                 showErrorMessage (presence) {
-                    // We didn't enter the room, so we must remove it from the MUC add-on
+                    // We didn't enter the room, so we must remove it from the
+                    // MUC add-on
                     const error = presence.querySelector('error');
                     if (error.getAttribute('type') === 'auth') {
                         if (!_.isNull(error.querySelector('not-authorized'))) {
@@ -1871,7 +1943,8 @@
                 },
 
                 renderAfterTransition () {
-                    /* Rerender the room after some kind of transition. For
+                    /*
+                     * Rerender the room after some kind of transition. For
                      * example after the spinner has been removed or after a
                      * form has been submitted and removed.
                      */
@@ -1900,9 +1973,10 @@
                 },
 
                 hideSpinner () {
-                    /* Check if the spinner is being shown and if so, hide it.
-                     * Also make sure then that the chat area and occupants
-                     * list are both visible.
+                    /*
+                     * Check if the spinner is being shown and if so, hide it.
+                     * Also make sure then that the chat area and occupants list
+                     * are both visible.
                      */
                     const spinner = this.el.querySelector('.spinner');
                     if (!_.isNull(spinner)) {
@@ -1913,20 +1987,19 @@
                 },
 
                 onOwnChatRoomPresence (pres) {
-                    /* Handles a received presence relating to the current
-                     * user.
-                     *
+                    /*
+                     * Handles a received presence relating to the current user.
+                     * 
                      * For locked rooms (which are by definition "new"), the
                      * room will either be auto-configured or created instantly
                      * (with default config) or a configuration room will be
                      * rendered.
-                     *
+                     * 
                      * If the room is not locked, then the room will be
                      * auto-configured only if applicable and if the current
                      * user is the room's owner.
-                     *
-                     * Parameters:
-                     *  (XMLElement) pres: The stanza
+                     * 
+                     * Parameters: (XMLElement) pres: The stanza
                      */
                     this.saveAffiliationAndRole(pres);
 
@@ -1939,7 +2012,8 @@
                             this.saveConfiguration().then(this.getRoomFeatures.bind(this));
                         } else {
                             this.getAndRenderConfigurationForm();
-                            return; // We haven't yet entered the room, so bail here.
+                            return; // We haven't yet entered the room, so bail
+                                    // here.
                         }
                     } else if (!this.model.get('features_fetched')) {
                         // The features for this room weren't fetched.
@@ -1957,10 +2031,10 @@
                 },
 
                 onChatRoomPresence (pres) {
-                    /* Handles all MUC presence stanzas.
-                     *
-                     * Parameters:
-                     *  (XMLElement) pres: The stanza
+                    /*
+                     * Handles all MUC presence stanzas.
+                     * 
+                     * Parameters: (XMLElement) pres: The stanza
                      */
                     if (pres.getAttribute('type') === 'error') {
                         this.model.save('connection_status', converse.ROOMSTATUS.DISCONNECTED);
@@ -1992,10 +2066,11 @@
                 },
 
                 isDuplicateBasedOnTime (message) {
-                    /* Checks whether a received messages is actually a
-                     * duplicate based on whether it has a "ts" attribute
-                     * with a unix timestamp.
-                     *
+                    /*
+                     * Checks whether a received messages is actually a
+                     * duplicate based on whether it has a "ts" attribute with a
+                     * unix timestamp.
+                     * 
                      * This is used for better integration with Slack's XMPP
                      * gateway, which doesn't use message IDs but instead the
                      * aforementioned "ts" attributes.
@@ -2034,11 +2109,11 @@
                 },
 
                 onChatRoomMessage (message) {
-                    /* Given a <message> stanza, create a message
-                     * Backbone.Model if appropriate.
-                     *
-                     * Parameters:
-                     *  (XMLElement) msg: The received message stanza
+                    /*
+                     * Given a <message> stanza, create a message Backbone.Model
+                     * if appropriate.
+                     * 
+                     * Parameters: (XMLElement) msg: The received message stanza
                      */
                     const original_stanza = message,
                         forwarded = message.querySelector('forwarded');
@@ -2224,12 +2299,13 @@
                 },
 
                 onFeatureChanged (model) {
-                    /* When a feature has been changed, it's logical opposite
+                    /*
+                     * When a feature has been changed, it's logical opposite
                      * must be set to the opposite value.
-                     *
+                     * 
                      * So for example, if "temporary" was set to "false", then
                      * "persistent" will be set to "true" in this method.
-                     *
+                     * 
                      * Additionally a debounced render method is called to make
                      * sure the features widget gets updated.
                      */
@@ -2263,7 +2339,8 @@
                             new _converse.ChatRoomOccupantView({model: item})
                         );
                     } else {
-                        delete view.model; // Remove ref to old model to help garbage collection
+                        delete view.model; // Remove ref to old model to help
+                                            // garbage collection
                         view.model = item;
                         view.initialize();
                     }
@@ -2308,12 +2385,13 @@
                 },
 
                 findOccupant (data) {
-                    /* Try to find an existing occupant based on the passed in
+                    /*
+                     * Try to find an existing occupant based on the passed in
                      * data object.
-                     *
+                     * 
                      * If we have a JID, we use that as lookup variable,
-                     * otherwise we use the nick. We don't always have both,
-                     * but should have at least one or the other.
+                     * otherwise we use the nick. We don't always have both, but
+                     * should have at least one or the other.
                      */
                     const jid = Strophe.getBareJidFromJid(data.jid);
                     if (jid !== null) {
@@ -2324,11 +2402,11 @@
                 },
 
                 updateOccupantsOnPresence (pres) {
-                    /* Given a presence stanza, update the occupant models
-                     * based on its contents.
-                     *
-                     * Parameters:
-                     *  (XMLElement) pres: The presence stanza
+                    /*
+                     * Given a presence stanza, update the occupant models based
+                     * on its contents.
+                     * 
+                     * Parameters: (XMLElement) pres: The presence stanza
                      */
                     const data = this.parsePresence(pres);
                     if (data.type === 'error') {
@@ -2413,11 +2491,137 @@
                         this.promptForInvite.bind(this));
                 }
             });
+            
+            _converse.NewRoomPanel = Backbone.View.extend({
+              /*
+               * Backbone View which renders the "Rooms" tab and accompanying
+               * panel in the control box.
+               * 
+               * In this panel, chat rooms can be listed, joined and new rooms
+               * can be created.
+               */
+              tagName: 'div',
+              className: 'controlbox-add-chatroom',
+              id: 'addingChatrooms',
+              events: {
+                  'submit form.add-chatroom': 'openChatRoom',
+                  'click #cancelRoomAdd': 'cancelAddRoom',
+                  'click a.open-room': 'openChatRoom',
+                  'change input[name=server]': 'setDomain',
+                  'change input[name=nick]': 'setNick'
+              },
+
+              initialize (cfg) {
+                  this.parent_el = cfg.$parent[0];
+                  this.tab_el = document.createElement('li');
+                  this.model.on('change:muc_domain', this.onDomainChange, this);
+                  this.model.on('change:nick', this.onNickChange, this);
+                  _converse.chatboxes.on('change:num_unread', this.renderTab, this);
+                  _converse.chatboxes.on('add', _.debounce(this.renderTab, 100), this);
+              },
+
+              render () {
+                  this.el.innerHTML = tpl_new_room_panel({
+                      'server_input_type': _converse.hide_muc_server && 'hidden' || 'text',
+                      'server_label_global_attr': _converse.hide_muc_server && ' hidden' || '',
+                      'label_room_name': __('Room name'),
+                      'label_nickname': __('Nickname'),
+                      'label_server': __('Server'),
+                      'label_join': __('Join Room'),
+                      'label_cancel': __('Cancel')
+                  });
+                  this.renderTab();
+                  const controlbox = _converse.chatboxes.get('controlbox');
+                  if (controlbox.get('active-panel') !== ROOMS_PANEL_ID) {
+                      this.el.classList.add('hidden');
+                  }
+                  return this;
+              },
+
+              renderTab () {
+                  const controlbox = _converse.chatboxes.get('controlbox');
+                  const chatrooms = fp.filter(
+                      _.partial(utils.isOfType, CHATROOMS_TYPE),
+                      _converse.chatboxes.models
+                  );
+              },
+
+              insertIntoDOM () {
+                  this.parent_el.appendChild(this.render().el);
+                  this.tabs = this.parent_el.parentNode.querySelector('#controlbox-tabs');
+                  this.tabs.appendChild(this.tab_el);
+                  return this;
+              },
+
+              onDomainChange (model) {
+                  const $server = this.$el.find('input.new-chatroom-server');
+                  $server.val(model.get('muc_domain'));
+                  if (_converse.auto_list_rooms) {
+                      this.updateRoomsList();
+                  }
+              },
+
+              onNickChange (model) {
+                  const $nick = this.$el.find('input.new-chatroom-nick');
+                  $nick.val(model.get('nick'));
+              },
+
+              parseRoomDataFromEvent (ev) {
+                  let name, $name, server, $server, jid;
+                  if (ev.type === 'click') {
+                      name = $(ev.target).text();
+                      jid = $(ev.target).attr('data-room-jid');
+                  } else {
+                      const $name = this.$el.find('input.new-chatroom-name');
+                      const $server= this.$el.find('input.new-chatroom-server');
+                      const server = $server.val();
+                      name = $name.val().trim();
+                      // $name.val(''); // Clear the input
+                      if (name && server) {
+                          jid = Strophe.escapeNode(name.toLowerCase()) + '@' + server.toLowerCase();
+                          $name.removeClass('error');
+                          $server.removeClass('error');
+                          this.model.save({muc_domain: server});
+                      } else {
+                          if (!name) { $name.addClass('error'); }
+                          if (!server) { $server.addClass('error'); }
+                          return;
+                      }
+                  }
+                  return {
+                      'jid': jid,
+                      'name': name || Strophe.unescapeNode(Strophe.getNodeFromJid(jid)),
+                  }
+              },
+
+              openChatRoom (ev) {
+                  ev.preventDefault();
+                  const data = this.parseRoomDataFromEvent(ev);
+                  if (!_.isUndefined(data)) {
+                      _converse.openChatRoom(data);
+                  }
+              },
+
+              setDomain (ev) {
+                this.model.save({muc_domain: ev.target.value});
+              },
+
+              setNick (ev) {
+                this.model.save({nick: ev.target.value});
+              },
+              
+              cancelAddRoom (ev) {
+                document.getElementById("overlay").classList.remove("show");
+                document.getElementById("new-room-name").value = "";
+              }
+              
+          });
 
             _converse.RoomsPanel = Backbone.View.extend({
-                /* Backbone View which renders the "Rooms" tab and accompanying
+                /*
+                 * Backbone View which renders the "Rooms" tab and accompanying
                  * panel in the control box.
-                 *
+                 * 
                  * In this panel, chat rooms can be listed, joined and new rooms
                  * can be created.
                  */
@@ -2425,7 +2629,7 @@
                 className: 'controlbox-pane',
                 id: 'chatrooms',
                 events: {
-                    'submit form.add-chatroom': 'openChatRoom',
+                    'load': 'showRooms',
                     'click input#show-rooms': 'showRooms',
                     'click a.open-room': 'openChatRoom',
                     'click a.room-info': 'toggleRoomInfo',
@@ -2436,7 +2640,7 @@
                 initialize (cfg) {
                     this.parent_el = cfg.$parent[0];
                     this.tab_el = document.createElement('li');
-                    this.model.on('change:muc_domain', this.onDomainChange, this);
+                    this.model.on('change:muc_domain', this.onDomainChange.bind(this), this);
                     this.model.on('change:nick', this.onNickChange, this);
                     _converse.chatboxes.on('change:num_unread', this.renderTab, this);
                     _converse.chatboxes.on('add', _.debounce(this.renderTab, 100), this);
@@ -2446,11 +2650,9 @@
                     this.el.innerHTML = tpl_room_panel({
                         'server_input_type': _converse.hide_muc_server && 'hidden' || 'text',
                         'server_label_global_attr': _converse.hide_muc_server && ' hidden' || '',
-                        'label_room_name': __('Room name'),
                         'label_nickname': __('Nickname'),
                         'label_server': __('Server'),
-                        'label_join': __('Join Room'),
-                        'label_show_rooms': __('Show rooms')
+                        'label_show_rooms': __('Update room list')
                     });
                     this.renderTab();
                     const controlbox = _converse.chatboxes.get('controlbox');
@@ -2495,13 +2697,15 @@
 
                 informNoRoomsFound () {
                     const $available_chatrooms = this.$el.find('#available-chatrooms');
-                    // For translators: %1$s is a variable and will be replaced with the XMPP server name
+                    // For translators: %1$s is a variable and will be replaced
+                    // with the XMPP server name
                     $available_chatrooms.html(`<dt>${__('No rooms on %1$s', this.model.get('muc_domain'))}</dt>`);
                     $('input#show-rooms').show().siblings('span.spinner').remove();
                 },
 
                 onRoomsFound (iq) {
-                    /* Handle the IQ stanza returned from the server, containing
+                    /*
+                     * Handle the IQ stanza returned from the server, containing
                      * all its public rooms.
                      */
                     const $available_chatrooms = this.$el.find('#available-chatrooms');
@@ -2509,7 +2713,7 @@
                     if (this.rooms.length) {
                         // For translators: %1$s is a variable and will be
                         // replaced with the XMPP server name
-                        $available_chatrooms.html(`<dt>${__('Rooms on %1$s',this.model.get('muc_domain'))}</dt>`);
+                        $available_chatrooms.html(`<dt>${__('Your chat rooms')}</dt>`);
                         const fragment = document.createDocumentFragment();
                         for (let i=0; i<this.rooms.length; i++) {
                             const name = Strophe.unescapeNode(
@@ -2534,7 +2738,8 @@
                 },
 
                 updateRoomsList () {
-                    /* Send and IQ stanza to the server asking for all rooms
+                    /*
+                     * Send and IQ stanza to the server asking for all rooms
                      */
                     _converse.connection.sendIQ(
                         $iq({
@@ -2564,16 +2769,16 @@
                 },
 
                 insertRoomInfo (el, stanza) {
-                    /* Insert room info (based on returned #disco IQ stanza)
-                     *
-                     * Parameters:
-                     *  (HTMLElement) el: The HTML DOM element that should
-                     *      contain the info.
-                     *  (XMLElement) stanza: The IQ stanza containing the room
-                     *      info.
+                    /*
+                     * Insert room info (based on returned #disco IQ stanza)
+                     * 
+                     * Parameters: (HTMLElement) el: The HTML DOM element that
+                     * should contain the info. (XMLElement) stanza: The IQ
+                     * stanza containing the room info.
                      */
                     const $stanza = $(stanza);
-                    // All MUC features found here: http://xmpp.org/registrar/disco-features.html
+                    // All MUC features found here:
+                    // http://xmpp.org/registrar/disco-features.html
                     el.querySelector('span.spinner').outerHTML =
                         tpl_room_description({
                             'jid': stanza.getAttribute('from'),
@@ -2609,7 +2814,8 @@
                 },
 
                 toggleRoomInfo (ev) {
-                    /* Show/hide extra information about a room in the listing.
+                    /*
+                     * Show/hide extra information about a room in the listing.
                      */
                     const { target } = ev,
                         $parent = $(target).parent('dd'),
@@ -2649,7 +2855,7 @@
                     }
                     return {
                         'jid': jid,
-                        'name': name || Strophe.unescapeNode(Strophe.getNodeFromJid(jid)),
+                        'name': Strophe.unescapeNode(Strophe.getNodeFromJid(jid)),
                     }
                 },
 
@@ -2669,16 +2875,16 @@
                     this.model.save({nick: ev.target.value});
                 }
             });
-            /************************ End of ChatRoomView **********************/
+            /** ********************** End of ChatRoomView ********************* */
 
 
             _converse.onDirectMUCInvitation = function (message) {
-                /* A direct MUC invitation to join a room has been received
-                 * See XEP-0249: Direct MUC invitations.
-                 *
-                 * Parameters:
-                 *  (XMLElement) message: The message stanza containing the
-                 *        invitation.
+                /*
+                 * A direct MUC invitation to join a room has been received See
+                 * XEP-0249: Direct MUC invitations.
+                 * 
+                 * Parameters: (XMLElement) message: The message stanza
+                 * containing the invitation.
                  */
                 const $message = $(message),
                     $x = $message.children('x[xmlns="jabber:x:conference"]'),
@@ -2691,7 +2897,8 @@
                 if (_converse.auto_join_on_invite) {
                     result = true;
                 } else {
-                    // Invite request might come from someone not your roster list
+                    // Invite request might come from someone not your roster
+                    // list
                     contact = contact? contact.get('fullname'): Strophe.getNodeFromJid(from);
                     if (!reason) {
                         result = confirm(
@@ -2728,10 +2935,10 @@
             }
 
             function autoJoinRooms () {
-                /* Automatically join chat rooms, based on the
-                 * "auto_join_rooms" configuration setting, which is an array
-                 * of strings (room JIDs) or objects (with room JID and other
-                 * settings).
+                /*
+                 * Automatically join chat rooms, based on the "auto_join_rooms"
+                 * configuration setting, which is an array of strings (room
+                 * JIDs) or objects (with room JID and other settings).
                  */
                 _.each(_converse.auto_join_rooms, function (room) {
                     if (_.isString(room)) {
@@ -2758,8 +2965,9 @@
                 }, attrs)));
             };
 
-            /* We extend the default converse.js API to add methods specific to MUC
-             * chat rooms.
+            /*
+             * We extend the default converse.js API to add methods specific to
+             * MUC chat rooms.
              */
             _.extend(_converse.api, {
                 'rooms': {
@@ -2837,8 +3045,9 @@
             });
 
             _converse.on('reconnected', function reconnectToChatRooms () {
-                /* Upon a reconnection event from converse, join again
-                 * all the open chat rooms.
+                /*
+                 * Upon a reconnection event from converse, join again all the
+                 * open chat rooms.
                  */
                 _converse.chatboxviews.each(function (view) {
                     if (view.model.get('type') === CHATROOMS_TYPE) {
@@ -2851,7 +3060,8 @@
             });
 
             function disconnectChatRooms () {
-                /* When disconnecting, or reconnecting, mark all chat rooms as
+                /*
+                 * When disconnecting, or reconnecting, mark all chat rooms as
                  * disconnected, so that they will be properly entered again
                  * when fetched from session storage.
                  */
