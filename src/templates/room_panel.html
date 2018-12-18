@@ -1,15 +1,9 @@
-<form class="pure-form pure-form-stacked converse-form add-chatroom" action="" method="post">
-    <fieldset>
-        <label>{{label_room_name}}</label>
-        <input type="text" name="chatroom" class="new-chatroom-name" placeholder="{{label_room_name}}"/>
-        {[ if (server_input_type != 'hidden') { ]}
-            <label{{server_label_global_attr}}>{{label_server}}</label>
-        {[ } ]}
-        <input type="{{server_input_type}}" name="server" class="new-chatroom-server" placeholder="{{label_server}}"/>
-        <input type="submit" class="pure-button button-primary" name="join" value="{{label_join}}"/>
-        <input type="button" class="pure-button button-secondary" name="show" id="show-rooms" value="{{label_show_rooms}}"/>
-    </fieldset>
-</form>
-<div class="rooms-list-container">
-    <dl id="available-chatrooms" class="rooms-list"></dl>
+<!-- <div id="chatrooms"> -->
+<div class="d-flex controlbox-padded">
+    <span class="w-100 controlbox-heading controlbox-heading--groupchats">{{{o.heading_chatrooms}}}</span>
+    <a class="controlbox-heading__btn show-list-muc-modal fa fa-list-ul" title="{{{o.title_list_rooms}}}" data-toggle="modal" data-target="#list-chatrooms-modal"></a>
+    <a class="controlbox-heading__btn show-add-muc-modal fa fa-plus" title="{{{o.title_new_room}}}" data-toggle="modal" data-target="#add-chatrooms-modal"></a>
 </div>
+<div class="list-container open-rooms-list rooms-list-container"></div>
+<div class="list-container bookmarks-list rooms-list-container"></div>
+<!-- </div> -->

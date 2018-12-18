@@ -1,5 +1,5 @@
 (function (root, factory) {
-    define(["jasmine", "mock", "converse-core", "test-utils", "converse-ping"], factory);
+    define(["jasmine", "mock", "test-utils"], factory);
 } (this, function (jasmine, mock, test_utils) {
     "use strict";
 
@@ -44,9 +44,9 @@
                 });
                 _converse.ping();
                 expect(sent_stanza.toLocaleString()).toBe(
-                    "<iq type='get' to='localhost' id='"+IQ_id+"' xmlns='jabber:client'>"+
-                        "<ping xmlns='urn:xmpp:ping'/>"+
-                    "</iq>");
+                    `<iq id="${IQ_id}" to="localhost" type="get" xmlns="jabber:client">`+
+                        `<ping xmlns="urn:xmpp:ping"/>`+
+                    `</iq>`);
             }));
         });
     });

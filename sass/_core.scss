@@ -1,57 +1,344 @@
-#converse-embedded-chat,
+@mixin fade-in {
+    opacity: 0;  /* make things invisible upon start */
+    @include animation-name(fadein);
+    @include animation-fill-mode(forwards);
+    @include animation-duration(0.75s);
+    @include animation-timing-function(ease);
+}
+
+body.reset {
+    margin: 0;
+}
+
+@font-face {
+    font-family: 'Converse-js';
+    src: url($font-path + 'icomoon.eot?wvi0ht');
+    src:  url($font-path + 'icomoon.eot?wvi0ht#iefix') format('embedded-opentype'),
+          url($font-path + 'icomoon.ttf?wvi0ht') format('truetype'),
+          url($font-path + 'icomoon.woff?wvi0ht') format('woff'),
+          url($font-path + 'icomoon.svg?wvi0ht#icomoon') format('svg');
+    font-weight: normal;
+    font-style: normal;
+}
+
+.icon-conversejs {
+    padding-right: 0.5em;
+    font-family: 'Converse-js';
+    font-size: 80%;
+    speak: none;
+    font-style: normal;
+    font-weight: normal;
+    font-variant: normal;
+    text-transform: none;
+    line-height: 1;
+    /* Better Font Rendering =========== */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+.icon-conversejs:before {
+    content: "\e600";
+}
+
+.converse-brand {
+    display: flex;
+    justify-content: space-between;
+    @include animation-name(fadein);
+    @include animation-fill-mode(forwards);
+    @include animation-duration(750ms);
+    @include animation-timing-function(ease);
+}
+
+.converse-brand__padding {
+    @include make-col-ready();
+    @include media-breakpoint-up(md) {
+        @include make-col(4);
+    }
+    @include media-breakpoint-up(lg) {
+        @include make-col(3);
+    }
+    @include media-breakpoint-up(xl) {
+        @include make-col(2);
+    }
+    padding: 0;
+}
+
+.converse-brand__heading {
+    @include make-col-ready();
+    @include media-breakpoint-up(md) {
+        font-size: 4em;
+        @include make-col(8);
+    }
+    @include media-breakpoint-up(lg) {
+        font-size: 5em;
+        @include make-col(9);
+    }
+    @include media-breakpoint-up(xl) {
+        font-size: 6em;
+        @include make-col(10);
+    }
+    padding: 0;
+}
+
+.converse-brand__text {
+    font-family: var(--heading-font);
+    font-weight: normal;
+    width: 50%;
+    margin: auto;
+    margin-top: 10%;
+    text-align: center;
+    .icon-conversejs {
+        font-size: 60%;
+    }
+}
+.converse-brand__byline {
+    font-size: var(--font-size-small);
+    width: 50%;
+    margin: auto;
+    text-align: center;
+
+    a {
+        text-decoration: none;
+        color: var(--chatroom-head-color-lighten-25-percent);
+    }
+}
+
 #conversejs {
     bottom: 0;
-    color: $text-color;
-    direction: ltr;
-    display: block;
-    font-family: "Helvetica", "Arial", sans-serif;
-    font-size: $font-size;
-    height: $bottom-gutter-height;
+    height: 100%;
     position: fixed;
-    right: 0;
-    width: auto;
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+    color: var(--text-color);
+    font-family: "Helvetica", "Arial", sans-serif;
+    font-size: var(--font-size);
+    direction: ltr;
     z-index: 1031; // One more than bootstrap navbar
-    @media screen and (max-height: $mobile-landscape-height) {
-        width: 100%;
-        width: 100vw;
-    }
-    @media screen and (max-width: $mobile-portrait-length) {
-        width: 100%;
-        width: 100vw;
+
+    .nopadding {
+        padding: 0 !important;
     }
 
+    &.converse-overlayed {
+        > .row {
+            flex-direction: row-reverse;
+        }
+    }
 
-	::-webkit-input-placeholder { /* Chrome/Opera/Safari */
-        color: $subdued-color;
-	}
-	::-moz-placeholder { /* Firefox 19+ */
-        color: $subdued-color;
-	}
-	:-ms-input-placeholder { /* IE 10+ */
-        color: $subdued-color;
-	}
-	:-moz-placeholder { /* Firefox 18- */
-        color: $subdued-color;
-	}
+    &.converse-fullscreen,
+    &.converse-mobile {
+        .converse-chatboxes {
+            width: 100vw;
+            left: -15px; // Hack due to padding added by bootstrap
+        }
+    }
+    &.converse-overlayed {
+        height: 3em;
+    }
+
+    .brand-heading-container {
+        text-align: center;
+    }
+
+    .brand-heading {
+        font-size: 200%;
+        font-family: var(--heading-font);
+    }
+
+    .popover {
+        position: fixed;
+    }
+
+    .converse-chatboxes {
+        z-index: 1031; // One more than bootstrap navbar
+        position: fixed;
+        bottom: 0;
+        right: 0;
+    }
+
+    ::-webkit-input-placeholder { /* Chrome/Opera/Safari */
+        color: var(--subdued-color);
+    }
+    ::-moz-placeholder { /* Firefox 19+ */
+        color: var(--subdued-color);
+    }
+    :-ms-input-placeholder { /* IE 10+ */
+        color: var(--subdued-color);
+    }
+    :-moz-placeholder { /* Firefox 18- */
+        color: var(--subdued-color);
+    }
     ::placeholder {
-        color: $subdued-color;
+        color: var(--subdued-color);
+    }
+
+    ::selection {
+        background-color: var(--highlight-color);
+    }
+    ::-moz-selection {
+        background-color: var(--highlight-color);
+    }
+
+    @media screen and (max-width: $mobile-portrait-length) {
+        margin: 0;
+        right: 10px;
+        left: 10px;
+        bottom: 5px;
+    }
+    @media screen and (max-height: $mobile-landscape-height) {
+        margin: 0;
+        right: 10px;
+        left: 10px;
+        bottom: 5px;
+    }
+
+    ul li { height: auto; }
+    div, span, h1, h2, h3, h4, h5, h6, p, blockquote,
+    pre, a, em, img, strong, dl, dt, dd, ol, ul, li,
+    fieldset, form, legend, table, caption, tbody,
+    tfoot, thead, tr, th, td, article, aside, details,
+    embed, figure, figcaption, footer, header, hgroup, menu,
+    nav, output, ruby, section, summary, time, mark, audio, video {
+        margin: 0;
+        padding: 0;
+        border: 0;
+        font: inherit;
+        vertical-align: baseline;
+    }
+
+    textarea,
+    input[type=submit], input[type=button],
+    input[type=text], input[type=password],
+    button {
+        font-size: var(--font-size);
+        padding: 0.25em;
+        min-height: 0;
+    }
+
+    strong {
+        font-weight: 700;
+    }
+
+    em {
+        font-style: italic;
+    }
+
+    ol, ul {
+        list-style: none;
+    }
+
+    li {
+        height: 10px;
+    }
+
+    ul, ol, dl {
+        font: inherit;
+        margin: 0;
+    }
+
+    a, a:visited, a:not([href]):not([tabindex]) {
+        text-decoration: none;
+        color: var(--link-color);
+        text-shadow: none;
+        &:hover {
+            color: var(--link-color-darken-20-percent);
+            text-decoration: none;
+            text-shadow: none;
+        }
+
+        &.fa, &.far, &.fas {
+            color: var(--subdued-color);
+            &:hover {
+                color: var(--gray-color);
+            }
+        }
+    }
+
+    svg {
+        border-radius: var(--chatbox-border-radius);
+    }
+
+    .fa, .far, .fas {
+        color: var(--subdued-color);
+    }
+
+    .fa:hover, .far:hover, .fas:hover {
+        color: var(--gray-color);
+    }
+
+    .modal {
+        background-color: rgba(0, 0, 0, 0.4);
+
+        .modal-body {
+            p {
+                padding: 0.25rem 0;
+            }
+        }
+
+        .modal-footer {
+            justify-content: flex-start;
+        }
+    }
+
+    .selected {
+        color: var(--link-color) !important;
     }
 
     .circle {
         border-radius: 50%;
     }
 
-    ::selection {
-        background-color: $highlight-color;
+    .badge {
+        line-height: 1;
+        font-weight: normal;
+        font-size: 90%;
     }
-    ::-moz-selection {
-        background-color: $highlight-color;
+
+    .btn {
+        font-family: var(--heading-font);
+        font-weight: normal;
+        color: #fff;
+        .fa, .far, .fas {
+            color: #fff;
+            margin-right: 0.5em;
+        }
     }
 
     .no-text-select {
         -webkit-touch-callout: none;
         @include user-select(none);
     }
+
+    @keyframes colorchange-chatmessage {
+        0%   {background-color: rgba(141, 216, 174, 1);}
+        25%  {background-color: rgba(141, 216, 174, 0.75);}
+        50%  {background-color: rgba(141, 216, 174, 0.5);}
+        75%  {background-color: rgba(141, 216, 174, 0.25);}
+        100% {background-color: transparent;}
+    }
+    @-webkit-keyframes colorchange-chatmessage {
+        0%   {background-color: rgba(141, 216, 174, 1);}
+        25%  {background-color: rgba(141, 216, 174, 0.75);}
+        50%  {background-color: rgba(141, 216, 174, 0.5);}
+        75%  {background-color: rgba(141, 216, 174, 0.25);}
+        100% {background-color: transparent;}
+    }
+
+    @keyframes colorchange-chatmessage-muc {
+        0%   {background-color: rgba(255, 181, 162, 1);}
+        25%  {background-color: rgba(255, 181, 162, 0.75);}
+        50%  {background-color: rgba(255, 181, 162, 0.5);}
+        75%  {background-color: rgba(255, 181, 162, 0.25);}
+        100% {background-color: transparent;}
+    }
+    @-webkit-keyframes colorchange-chatmessage-muc {
+        0%   {background-color: rgba(255, 181, 162, 1);}
+        25%  {background-color: rgba(255, 181, 162, 0.75);}
+        50%  {background-color: rgba(255, 181, 162, 0.5);}
+        75%  {background-color: rgba(255, 181, 162, 0.25);}
+        100% {background-color: transparent;}
+    }
+
 
     @keyframes fadein {
         0% { opacity: 0 }
@@ -62,26 +349,49 @@
         100% { opacity: 1 }
     }
 
+    @-webkit-keyframes fadeOut {
+		 0% { opacity: 1; visibility: visible; }
+		 100% { opacity: 0; visibility: hidden;  }
+	} 
+    @keyframes fadeOut {
+		 0% { opacity: 1; visibility: visible; }
+		 100% { opacity: 0; visibility: hidden;  }
+	} 
+
+    .fade-in {
+        @include fade-in;
+    }
+
     .visible {
-        visibility: visible;
-        opacity: 1;
+        opacity:0;  /* make things invisible upon start */
         @include animation-name(fadein);
         @include animation-fill-mode(forwards);
-        @include animation-duration(350ms);
+        @include animation-duration(500ms);
         @include animation-timing-function(ease);
     }
+
     .hidden {
-        opacity: 0;
-        display: none;
+        opacity: 0 !important;
+        display: none !important;
     }
+
+    .fade-out {
+		animation-duration: 1s;
+		animation-fill-mode: forwards;  
+		animation-name: fadeOut;
+		animation-timing-function: ease-in-out;
+    }
+
     .collapsed {
-        height: 0;
-        overflow: hidden;
+        height: 0 !important;
+        overflow: hidden !important;
+        padding: 0 !important;
     }
 
     .locked {
         padding-right: 22px;
     }
+
 
     @include keyframes(spin) {
         from {
@@ -92,20 +402,13 @@
         }
     }
 
-    .emojione {
-        height: $emoji_height;
-    }
-
     .spinner {
         @include animation(spin 2s infinite, linear);
+        width: 1em;
         display: block;
         text-align: center;
-        margin: 1em;
-        &:before {
-            font-size: 24px;
-            font-family: 'Converse-js' !important;
-            content: "\231b";
-        }
+        margin: 2em;
+        font-size: 24px;
     }
     .left {
         float: left;
@@ -116,8 +419,7 @@
     .centered {
         text-align: center;
         display: block;
-        margin: 0;
-        padding: 10% 0;
+        margin: auto;
     }
     .hor_centered {
         text-align: center;
@@ -126,23 +428,15 @@
         clear: both;
     }
 
-    .button-group,
-    .input-button-group {
-        display: table;
-    }
-    .button-group {
-        width: 100%;
-    }
-    .input-button-group button,
-    .input-button-group input {
-        display: table-cell;
-    }
-
     .error {
-        color: $error-color;
+        color: var(--error-color);
+    }
+    .info {
+        color: var(--info-color);
     }
     .reg-feedback {
         font-size: 85%;
+        margin-bottom: 1em;
     }
 
     .reg-feedback,
@@ -152,93 +446,98 @@
         width: 100%;
     }
 
-    a.restore-chat {
-        padding: 1px 0 1px 5px;
-        color: $chat-head-text-color;
-        line-height: 15px;
-        display: block;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-
-    a.restore-chat:visited {
-        color: $chat-head-text-color;
+    .avatar {
+        border-radius: var(--avatar-border-radius);
+        border: var(--avatar-border);
+        background-color: var(--avatar-background-color);
     }
 
     .activated {
         display: block !important;
     }
-    .pure-form-message {
-        padding: 0.5em 0;
-    }
-    .pure-button {
-        border-radius: $chatbox-border-radius;
-    }
-    .button-primary {
-        color: white;
-        background-color: $primary-color;
-    }
-    .button-secondary {
-        color: white;
-        background-color: $secondary-color;
-    }
-    .button-cancel {
-        color: white;
-        background-color: $text-color;
+
+    .nav-pills .nav-link.active,
+    .nav-pills .show > .nav-link {
+        background-color: var(--primary-color);
     }
 
-    form {
-        &.pure-form.converse-form {
-            background: white;
-            padding: 1em;
-            legend {
-                color: $text-color;
-                font-size: 125%;
-            }
-            input[type=checkbox] {
-                display: block;
-            }
-            select,
-            input[type=password],
-            input[type=number],
-            input[type=text] {
-                min-width: 50%;
-            }
-            label {
-                margin: 1em 0;
-                font-size: $font-size-large;
-            }
-            input[type=text],
-            input[type=password],
-            input[type=number],
-            input[type=button],
-            input[type=submit] {
-                padding: 0.5em;
-            }
-            input[type=button],
-            input[type=submit] {
-                padding-left: 1em;
-                padding-right: 1em;
-                margin: 0.5em 0;
-                border: none;
-            }
-            input.error {
-                border: 1px solid $error-color;
-                color: $text-color;
-            }
-            .form-help {
-                color: gray;
-                font-size: 85%;
-                padding-top: 0.5em;
-                &:hover {
-                    color: $text-color;
-                }
-            }
+    .list-group-item.active {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color-dark);
+    }
+
+    .badge {
+        text-shadow: none;
+    }
+
+    .badge {
+        color: white;
+    }
+
+    .btn-primary, .button-primary, .badge-primary {
+        background-color: var(--primary-color);
+        border-color: transparent;
+        &:hover {
+            background-color: var(--primary-color-dark);
+            border-color: transparent;
         }
-        &.pure-form.converse-centered-form {
-            text-align: center;
-            width: 100%;
+        &.active {
+            background-color: var(--primary-color-dark) !important;
+            border-color: transparent !important;
+        }
+    }
+
+    .badge-groupchat {
+        background-color: var(--chatroom-head-color);
+        border-color: transparent;
+        &:hover {
+            background-color: var(--chatroom-head-color-dark);
+            border-color: transparent;
+        }
+        &.active {
+            background-color: var(--chatroom-head-color-dark) !important;
+            border-color: transparent !important;
+        }
+    }
+
+    .btn-info, .badge-info {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
+        &:hover {
+            background-color: var(--primary-color-dark);
+            border-color: var(--primary-color-dark);
+        }
+    }
+
+    .button-cancel,
+    .btn-secondary, .badge-secondary {
+        color: white;
+        background-color: var(--secondary-color);
+        border-color: var(--secondary-color);
+        &:hover {
+            background-color: var(--secondary-color-dark);
+            border-color: var(--secondary-color-dark);
+        }
+    }
+
+    .btn-warning {
+        color: white;
+        background-color: var(--warning-color);
+        border-color: var(--warning-color);
+        &:hover {
+            color: white;
+            background-color: var(--warning-color-dark);
+            border-color: var(--warning-color-dark)
+        }
+    }
+
+    .btn-danger {
+        color: white;
+        background-color: var(--danger-color);
+        border-color: var(--danger-color) !important;
+        &:hover {
+            background-color: var(--danger-color-dark);
+            border-color: var(--danger-color-dark);
         }
     }
 
@@ -247,13 +546,58 @@
         margin: 0;
     }
     .chat-textarea-chatroom-selected {
-        border: 2px solid $link-color;
+        border: 2px solid var(--link-color);
         margin: 0;
     }
+}
 
-    .dropdown dt,
-    .dropdown ul {
-        margin: 0;
-        padding: 0;
+@media screen and (max-width: 575px) {
+    body {
+      .converse-brand {
+        font-size: 3.75em;
+      }
     }
+    #conversejs:not(.converse-embedded)  {
+        .chatbox  {
+            .chat-body {
+                border-radius: var(--chatbox-border-radius);
+            }
+        }
+        .flyout {
+            border-radius: var(--chatbox-border-radius);
+        }
+    }
+}
+
+
+@media screen and (min-width: 576px) {
+  #conversejs .offset-sm-2 {
+    margin-left: 16.666667%;
+  }
+}
+@media screen and (min-width: 768px) {
+  #conversejs .offset-md-2 {
+    margin-left: 16.666667%;
+  }
+  #conversejs .offset-md-3 {
+    margin-left: 25%;
+  }
+}
+@media screen and (min-width: 992px) {
+  #conversejs .offset-lg-2 {
+    margin-left: 16.666667%;
+  }
+  #conversejs .offset-lg-3 {
+    margin-left: 25%;
+  }
+}
+@media screen and (min-width: 1200px) {
+  #conversejs .offset-xl-2 {
+    margin-left: 16.666667%;
+  }
+}
+@media screen and (max-height: 450px) {
+  #conversejs {
+    left: 0;
+  }
 }

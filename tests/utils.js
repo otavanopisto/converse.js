@@ -1,17 +1,45 @@
 (function (root, factory) {
-    define(['jquery.noconflict', 'converse', 'es6-promise',  'mock', 'wait-until-promise'], factory);
-}(this, function ($, converse_api, Promise, mock, waitUntilPromise) {
-    var _ = converse_api.env._;
-    var $msg = converse_api.env.$msg;
-    var $pres = converse_api.env.$pres;
-    var $iq = converse_api.env.$iq;
-    var Strophe = converse_api.env.Strophe;
+    define(['es6-promise',  'mock', 'wait-until-promise'], factory);
+}(this, function (Promise, mock, waitUntilPromise) {
+    var _ = converse.env._;
+    var $msg = converse.env.$msg;
+    var $pres = converse.env.$pres;
+    var $iq = converse.env.$iq;
+    var Strophe = converse.env.Strophe;
+    var sizzle = converse.env.sizzle;
+    var u = converse.env.utils;
     var utils = {};
 
     if (typeof window.Promise === 'undefined') {
         waitUntilPromise.setPromiseImplementation(Promise);
     }
-    utils.waitUntil = waitUntilPromise['default'];
+    utils.waitUntil = waitUntilPromise.default;
+
+    utils.waitUntilDiscoConfirmed = async function (_converse, entity_jid, identities, features=[], items=[], type='info') {
+        const iq = await utils.waitUntil(() => {
+            return _.filter(
+                _converse.connection.IQ_stanzas,
+                (iq) => sizzle(`iq[to="${entity_jid}"] query[xmlns="http://jabber.org/protocol/disco#${type}"]`, iq.nodeTree).length
+            ).pop();
+        }, 300);
+        const stanza = $iq({
+            'type': 'result',
+            'from': entity_jid,
+            'to': 'dummy@localhost/resource',
+            'id': iq.nodeTree.getAttribute('id'),
+        }).c('query', {'xmlns': 'http://jabber.org/protocol/disco#'+type});
+
+        _.forEach(identities, function (identity) {
+            stanza.c('identity', {'category': identity.category, 'type': identity.type}).up()
+        });
+        _.forEach(features, function (feature) {
+            stanza.c('feature', {'var': feature}).up();
+        });
+        _.forEach(items, function (item) {
+            stanza.c('item', {'jid': item}).up();
+        });
+        _converse.connection._dataRecv(utils.createRequest(stanza));
+    }
 
     utils.createRequest = function (iq) {
         iq = typeof iq.tree == "function" ? iq.tree() : iq;
@@ -34,37 +62,25 @@
     };
 
     utils.openControlBox = function () {
-        var $toggle = $(".toggle-controlbox");
-        if (!$("#controlbox").is(':visible')) {
-            if (!$toggle.is(':visible')) {
-                $toggle[0].classList.remove('hidden');
-                $toggle.click();
-            } else {
-                $toggle.click();
+        var toggle = document.querySelector(".toggle-controlbox");
+        if (!u.isVisible(document.querySelector("#controlbox"))) {
+            if (!u.isVisible(toggle)) {
+                u.removeClass('hidden', toggle);
             }
+            toggle.click();
         }
         return this;
     };
 
     utils.closeControlBox = function () {
-        if ($("#controlbox").is(':visible')) {
-            $("#controlbox").find(".close-chatbox-button").click();
+        var controlbox = document.querySelector("#controlbox");
+        if (u.isVisible(controlbox)) {
+            var button = controlbox.querySelector(".close-chatbox-button");
+            if (!_.isNull(button)) {
+                button.click();
+            }
         }
         return this;
-    };
-
-    utils.openContactsPanel = function (converse) {
-        this.openControlBox(converse);
-        var cbview = converse.chatboxviews.get('controlbox');
-        var $tabs = cbview.$el.find('#controlbox-tabs');
-        $tabs.find('li').first().find('a').click();
-    };
-
-    utils.openRoomsPanel = function (converse) {
-        utils.openControlBox();
-        var cbview = converse.chatboxviews.get('controlbox');
-        var $tabs = cbview.$el.find('#controlbox-tabs');
-        $tabs.find('li').last().find('a').click();
     };
 
     utils.openChatBoxes = function (converse, amount) {
@@ -76,70 +92,108 @@
         return views;
     };
 
-    utils.openChatBoxFor = function (converse, jid) {
-        return converse.roster.get(jid).trigger("open");
+    utils.openChatBoxFor = function (_converse, jid) {
+        _converse.roster.get(jid).trigger("open");
+        return utils.waitUntil(() => _converse.chatboxviews.get(jid), 1000);
+    };
+
+    utils.openChatRoomViaModal = async function (_converse, jid, nick='') {
+        // Opens a new chatroom
+        utils.openControlBox(_converse);
+        const roomspanel = _converse.chatboxviews.get('controlbox').roomspanel;
+        roomspanel.el.querySelector('.show-add-muc-modal').click();
+        utils.closeControlBox(_converse);
+        const modal = roomspanel.add_room_modal;
+        await utils.waitUntil(() => u.isVisible(modal.el), 1500)
+        modal.el.querySelector('input[name="chatroom"]').value = jid;
+        modal.el.querySelector('input[name="nickname"]').value = nick;
+        modal.el.querySelector('form input[type="submit"]').click();
+        await utils.waitUntil(() => _converse.chatboxviews.get(jid), 1000);
+        return _converse.chatboxviews.get(jid);
     };
 
     utils.openChatRoom = function (_converse, room, server, nick) {
-        // Opens a new chatroom
-        this.openControlBox(_converse);
-        this.openRoomsPanel(_converse);
-        var roomspanel = _converse.chatboxviews.get('controlbox').roomspanel;
-        roomspanel.$el.find('input.new-chatroom-name').val(room);
-        roomspanel.$el.find('input.new-chatroom-server').val(server);
-        roomspanel.$el.find('form').submit();
-        this.closeControlBox(_converse);
+        return _converse.api.rooms.open(`${room}@${server}`);
     };
 
-    utils.openAndEnterChatRoom = function (converse, room, server, nick) {
-        return new Promise(function (resolve, reject) {
-            sinon.spy(converse.connection, 'sendIQ');
-            utils.openChatRoom(converse, room, server);
-            var view = converse.chatboxviews.get((room+'@'+server).toLowerCase());
+    utils.openAndEnterChatRoom = async function (_converse, room, server, nick, features=[]) {
+        const room_jid = `${room}@${server}`.toLowerCase();
+        const stanzas = _converse.connection.IQ_stanzas;
+        await _converse.api.rooms.open(room_jid);
+        const view = _converse.chatboxviews.get(room_jid);
+        let stanza = await utils.waitUntil(() => _.get(_.filter(
+            stanzas,
+            iq => iq.nodeTree.querySelector(
+                `iq[to="${room_jid}"] query[xmlns="http://jabber.org/protocol/disco#info"]`
+            )).pop(), 'nodeTree'));
 
-            // We pretend this is a new room, so no disco info is returned.
-            var IQ_id = converse.connection.sendIQ.firstCall.returnValue;
-            var features_stanza = $iq({
-                    'from': 'lounge@localhost',
-                    'id': IQ_id,
-                    'to': 'dummy@localhost/desktop',
-                    'type': 'error'
-                }).c('error', {'type': 'cancel'})
-                    .c('item-not-found', {'xmlns': "urn:ietf:params:xml:ns:xmpp-stanzas"});
-            converse.connection._dataRecv(utils.createRequest(features_stanza));
+        const features_stanza = $iq({
+            'from': room_jid,
+            'id': stanza.getAttribute('id'),
+            'to': 'dummy@localhost/desktop',
+            'type': 'result'
+        }).c('query', { 'xmlns': 'http://jabber.org/protocol/disco#info'})
+            .c('identity', {
+                'category': 'conference',
+                'name': room[0].toUpperCase() + room.slice(1),
+                'type': 'text'
+            }).up();
 
-            utils.waitUntil(function () {
-                return converse.connection.sendIQ.secondCall;
-            }).then(function () {
-                // The XMPP server returns the reserved nick for this user.
-                IQ_id = converse.connection.sendIQ.secondCall.returnValue;
-                var stanza = $iq({
-                    'type': 'result',
-                    'id': IQ_id,
-                    'from': view.model.get('jid'),
-                    'to': converse.connection.jid 
-                }).c('query', {'xmlns': 'http://jabber.org/protocol/disco#info', 'node': 'x-roomuser-item'})
-                    .c('identity', {'category': 'conference', 'name': nick, 'type': 'text'});
-                converse.connection._dataRecv(utils.createRequest(stanza));
-                // The user has just entered the room (because join was called)
-                // and receives their own presence from the server.
-                // See example 24: http://xmpp.org/extensions/xep-0045.html#enter-pres
-                var presence = $pres({
-                        to: converse.connection.jid,
-                        from: room+'@'+server+'/'+nick,
-                        id: 'DC352437-C019-40EC-B590-AF29E879AF97'
-                }).c('x').attrs({xmlns:'http://jabber.org/protocol/muc#user'})
-                    .c('item').attrs({
-                        affiliation: 'member',
-                        jid: converse.bare_jid,
-                        role: 'occupant'
-                    }).up()
-                    .c('status').attrs({code:'110'});
-                converse.connection._dataRecv(utils.createRequest(presence));
-                converse.connection.sendIQ.restore();
-                resolve();
-            });
-        });
+        features = features.length ? features : [
+            'http://jabber.org/protocol/muc',
+            'jabber:iq:register',
+            'muc_passwordprotected',
+            'muc_hidden',
+            'muc_temporary',
+            'muc_open',
+            'muc_unmoderated',
+            'muc_anonymous']
+        features.forEach(f => features_stanza.c('feature', {'var': f}).up());
+        features_stanza.c('x', { 'xmlns':'jabber:x:data', 'type':'result'})
+            .c('field', {'var':'FORM_TYPE', 'type':'hidden'})
+                .c('value').t('http://jabber.org/protocol/muc#roominfo').up().up()
+            .c('field', {'type':'text-single', 'var':'muc#roominfo_description', 'label':'Description'})
+                .c('value').t('This is the description').up().up()
+            .c('field', {'type':'text-single', 'var':'muc#roominfo_occupants', 'label':'Number of occupants'})
+                .c('value').t(0);
+        _converse.connection._dataRecv(utils.createRequest(features_stanza));
+
+        const iq = await utils.waitUntil(() => _.filter(
+            stanzas,
+            s => sizzle(`iq[to="${room_jid}"] query[node="x-roomuser-item"]`, s.nodeTree).length
+        ).pop());
+
+        // We remove the stanza, otherwise we might get stale stanzas returned in our filter above.
+        stanzas.splice(stanzas.indexOf(iq), 1)
+
+        // The XMPP server returns the reserved nick for this user.
+        const IQ_id = iq.nodeTree.getAttribute('id');
+        stanza = $iq({
+            'type': 'result',
+            'id': IQ_id,
+            'from': view.model.get('jid'),
+            'to': _converse.connection.jid
+        }).c('query', {'xmlns': 'http://jabber.org/protocol/disco#info', 'node': 'x-roomuser-item'})
+            .c('identity', {'category': 'conference', 'name': nick, 'type': 'text'});
+        _converse.connection._dataRecv(utils.createRequest(stanza));
+        await utils.waitUntil(() => view.model.get('nick'));
+
+        // The user has just entered the room (because join was called)
+        // and receives their own presence from the server.
+        // See example 24: http://xmpp.org/extensions/xep-0045.html#enter-pres
+        var presence = $pres({
+                to: _converse.connection.jid,
+                from: `${room_jid}/${nick}`,
+                id: u.getUniqueId()
+        }).c('x').attrs({xmlns:'http://jabber.org/protocol/muc#user'})
+            .c('item').attrs({
+                affiliation: 'owner',
+                jid: _converse.bare_jid,
+                role: 'moderator'
+            }).up()
+            .c('status').attrs({code:'110'});
+        _converse.connection._dataRecv(utils.createRequest(presence));
+        await utils.waitUntil(() => (view.model.get('connection_status') === converse.ROOMSTATUS.ENTERED));
     };
 
     utils.clearBrowserStorage = function () {
@@ -150,7 +204,7 @@
 
     utils.clearChatBoxMessages = function (converse, jid) {
         var view = converse.chatboxviews.get(jid);
-        view.$el.find('.chat-content').empty();
+        view.el.querySelector('.chat-content').innerHTML = '';
         view.model.messages.reset();
         view.model.messages.browserStorage._clear();
     };
@@ -195,7 +249,7 @@
                 converse.roster.create({
                     'ask': ask,
                     'fullname': names[i],
-                    'jid': jid, 
+                    'jid': jid,
                     'requesting': requesting,
                     'subscription': subscription
                 });
@@ -208,7 +262,7 @@
         /* Create grouped contacts
          */
         var i=0, j=0;
-        _.each(_.keys(mock.groups), $.proxy(function (name) {
+        _.each(_.keys(mock.groups), function (name) {
             j = i;
             for (i=j; i<j+mock.groups[name]; i++) {
                 converse.roster.create({
@@ -219,7 +273,7 @@
                     fullname: mock.cur_names[i]
                 });
             }
-        }, converse));
+        });
     };
 
     utils.createChatMessage = function (_converse, sender_jid, message) {
@@ -233,9 +287,15 @@
                .c('active', {'xmlns': Strophe.NS.CHATSTATES}).tree();
     }
 
-    utils.sendMessage = function (chatboxview, message) {
-        chatboxview.$el.find('.chat-textarea').val(message);
-        chatboxview.$el.find('textarea.chat-textarea').trigger($.Event('keypress', {keyCode: 13}));
+    utils.sendMessage = function (view, message) {
+        const promise = new Promise((resolve, reject) => view.on('messageInserted', resolve));
+        view.el.querySelector('.chat-textarea').value = message;
+        view.keyPressed({
+            target: view.el.querySelector('textarea.chat-textarea'),
+            preventDefault: _.noop,
+            keyCode: 13
+        });
+        return promise;
     };
     return utils;
 }));
