@@ -1,2 +1,4 @@
-<a href="#" class="rooms-toggle bookmarks-toggle icon-{{{toggle_state}}}" title="{{{desc_bookmarks}}}"><span class="rooms-toggle-text">{{{label_bookmarks}}}</span></a>
-<dl class="bookmarks rooms-list"></dl>
+<a href="#" class="list-toggle bookmarks-toggle controlbox-padded" title="{{{o.desc_bookmarks}}}">
+    <span class="fa {[ if (o.toggle_state === o._converse.OPENED) { ]} fa-caret-down {[ } else { ]} fa-caret-right {[ } ]}">
+    </span> {{{o.label_bookmarks}}}</a>
+<div class="items-list bookmarks rooms-list {[ if (o.toggle_state !== o._converse.OPENED) { ]} hidden {[ } ]}"></div>

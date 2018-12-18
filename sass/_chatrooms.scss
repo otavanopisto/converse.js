@@ -1,8 +1,7 @@
-#converse-embedded-chat,
+#conversejs.converse-embedded,
 #conversejs {
-    .new-chatroom-nick {
-        margin: 1em auto;
-        
+    .badge-room-color {
+        background-color: var(--chatroom-head-color);
     }
 
     .add-chatroom {
@@ -12,34 +11,74 @@
         }
     }
 
+    #room-details-modal {
+        .features-list {
+            margin-left: 1em;
+        }
+    }
+
+    .chatroom-features {
+        width: 100%;
+        .features-list {
+            padding-top: 0;
+            .feature {
+                width: 100%;
+                margin-right: 0.5em;
+                padding-right: 0;
+                font-size: 1em;
+                cursor: help;
+                .fa {
+                    margin-right: 0.5em;
+                    color: var(--text-color);
+                }
+            }
+        }
+    }
+
+
     .chat-head-chatroom {
-        background-color: $chatroom-head-color;
+        background-color: var(--chatroom-head-color);
+        border-bottom: var(--chatroom-head-border-bottom);
+
+        .chatroom-description {
+            color: var(--chatroom-head-description-color);
+            display: var(--chatroom-head-description-display);
+            font-size: var(--font-size);
+            font-size: 70%;
+            margin-top: 3px;
+            overflow-y: hidden;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            border-left: var(--chatroom-head-description-border-left);
+            padding-left: var(--chatroom-head-description-padding-left);
+            a {
+                color: var(--chatroom-head-description-link-color);
+            }
+        }
+
+        a, a:visited, a:hover, a:not([href]):not([tabindex]) {
+            &.chatbox-btn {
+                &.fa {
+                    color: var(--chat-head-text-color);
+                    &.button-on:before {
+                        color: var(--chatroom-head-button-color);
+                    }
+                }
+            }
+        }
+
         .chatbox-btn {
-            &.button-on {
-                background-color: $chat-head-text-color;
-                color: $chatroom-head-color;
+            &.button-on:before {
+                color: var(--chatroom-head-button-color);
             }
         }
         .chat-title {
-            color: $chatroom-title-color;
-            
-            .chatroom-name {
-                color: white;
-            }
-            
+            display: var(--heading-display);
+            font-weight: var(--chatroom-head-title-font-weight);
+            padding-right: var(--chatroom-head-title-padding-right);
             .chatroom-jid {
-                font-size: $font-size-small;
-            }
-            
-            .chatroom-description {
-/*                 color: white; */
-/*                 font-size: 80%; */
-/*                 font-style: italic; */
-/*                 overflow: hidden; */
-/*                 text-overflow: ellipsis;  */
-/*                 white-space: nowrap; */
-/*                 margin: 0.3em 0; */
-               display: none;
+                font-size: var(--font-size-small);
             }
         }
         
@@ -54,86 +93,98 @@
     }
 
     .chatroom {
-        width: $chatroom-width;
+        width: var(--chatroom-width);
         @media screen and (max-height: $mobile-landscape-height){
-            width: $mobile-chat-width;
+            width: var(--mobile-chat-width);
         }
         @media screen and (max-width: $mobile-portrait-length) {
-            width: $mobile-chat-width;
+            width: var(--mobile-chat-width);
         }
 
         .box-flyout {
-            min-width: $chatroom-width;
-            width: $chatroom-width;
+            overflow-y: hidden;
+            background-color: var(--chatroom-head-color);
+
+            width: 100%;
             @media screen and (max-height: $mobile-landscape-height) {
-                height: $mobile-chat-height;
-                width: $mobile-chat-width;
+                height: var(--mobile-chat-height);
+                width: var(--mobile-chat-width);
                 height: 100vh;
             }
             @media screen and (max-width: $mobile-portrait-length) {
-                height: $mobile-chat-height;
-                width: $mobile-chat-width;
+                height: var(--mobile-chat-height);
+                width: var(--mobile-chat-width);
                 height: 100vh;
             }
             .chatroom-body {
-                height: 289px;
-                @include border-bottom-radius($chatbox-border-radius);
-                @include calc(height, '100% - #{$chat-head-height}');
+                flex-direction: row;
+                flex-flow: nowrap;
+                border-bottom-radius: var(--chatbox-border-radius);
                 background-color: white;
                 border-top: 0;
                 width: 100%;
-                .chat-info {
-                    color: $chatroom-head-color;
+                overflow: hidden;
+
+                .row {
+                    flex-direction: row;
                 }
-                .mentioned {
+                .chat-topic {
+                    display: var(--chat-topic-display);
                     font-weight: bold;
+                    color: var(--chatroom-head-color);
                 }
-                .chat-message {
-                    .chat-msg-them {
-                        color: $chatroom-message-them-color;
+                .chat-info {
+                    display: var(--chat-info-display);
+                    color: var(--chatroom-head-color);
+                    line-height: normal;
+                    &.badge {
+                        color: var(--chat-head-text-color);
                     }
                 }
-                .disconnect-msg {
-                    padding: 2em 2em 0 2em;
+                .disconnect-container {
+                    margin: 1em;
+                    width: 100%;
+                    h3.disconnect-msg {
+                        padding-bottom: 1em;
+                    }
                 }
                 .chat-area {
-                    word-wrap: break-word; 
-                    height: 100%;
-                    width: 70%;
-                    float: left;
-                    min-width: $chat-width;
+                    display: flex;
+                    flex-direction: column;
+                    word-wrap: break-word;
                     .new-msgs-indicator {
-                        background-color: $chatroom-head-color;
-                        max-width: 70%;
+                        background-color: var(--chatroom-head-color);
                     }
                     .chat-content {
-                        // There's an annoying Chrome box-sizing bug which prevents us from adding 0.5em padding here.
-                        padding: 0 0.5em 0 0.5em;
-                    }
-                    &.full {
-                        min-width: 100%;
-                        .new-msgs-indicator {
-                            min-width: 100%;
-                        }
+                        height: 100%;
                     }
                 }
                 .occupants {
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: space-between;
                     overflow-x: hidden;
                     overflow-y: hidden;
-                    float: right;
                     vertical-align: top;
-                    background-color: white;
-                    border-left: 1px solid #ddd;
-                    border-bottom-right-radius: $chatbox-border-radius;
-                    width: 30%;
-                    height: 100%;
+                    background-color: var(--occupants-background-color);
+                    border-left: var(--occupants-border-left);
+                    border-bottom-right-radius: var(--chatbox-border-radius);
                     padding: 0.5em;
+                    max-width: var(--occupants-max-width);
+
+                    .occupants-header {
+                        display: flex;
+                        flex-direction: column;
+                        .hide-occupants {
+                            align-self: flex-end;
+                            cursor: pointer;
+                        }
+                    }
                     .occupants-heading {
-                        padding: 0.3em 0;
-                        font-weight: bold;
+                        font-family: var(--heading-font);
                     }
                     .chatroom-features {
-                        display: none;
+                        display: var(--occupants-features-display);
                     }
                     .awesomplete {
                         ul {
@@ -144,39 +195,65 @@
                         }
                     }
                     ul {
-                        padding: 0.3em 0;
+                        padding: 0.5em 0 0 0;
+                        margin-bottom: 0.5em;
                         overflow-x: hidden;
                         overflow-y: auto;
                         list-style: none;
 
                         &.occupant-list {
                             overflow-y: auto;
-                            @include calc(height, '100% - 220px');
-                        }
-                        &.features-list {
-                            padding-top: 0;
+                            flex-basis: 0;
+                            flex-grow: 1;
+                            border-bottom: var(--occupants-border-bottom);
                         }
                         li {
                             cursor: default;
                             display: block;
-                            font-size: $font-size-small;
+                            font-size: var(--font-size-small);
                             overflow: hidden;
-                            padding: 0.2em 0.5em 0.2em 0;
+                            padding: 0.25em 0.25em 0.25em 0;
                             text-overflow: ellipsis;
-                            white-space: nowrap;
-                            [class^="icon-"], [class*=" icon-"] {
-                                padding-right: 0.5em;
+                            .fa {
+                                margin-right: 0.5em;
                             }
                             &.feature {
-                                font-size: $font-size-tiny;
+                                font-size: var(--font-size-tiny);
                             }
                             &.occupant {
                                 cursor: pointer;
+
+                                .occupant-nick-badge {
+                                    display: flex;
+                                    justify-content: space-between;
+                                    flex-wrap: wrap;
+
+                                    .occupant-badges {
+                                        display: flex;
+                                        justify-content: flex-end;
+                                        flex-wrap: wrap;
+                                        flex-direction: row;
+
+                                        span {
+                                            margin-right: 0.25rem;
+                                        }
+                                    }
+                                }
+
+                                div.row.no-gutters {
+                                    flex-wrap: nowrap;
+                                    min-height: 1.5em;
+                                }
+                                .badge {
+                                    margin-bottom: 0.125rem;
+                                }
+
                                 .occupant-status {
-									display: inline-block;
-                                    margin-right: 0.5em;
-									width: 0.5em;
-									height: 0.5em;
+                                    display: inline-block;
+                                    margin: 0 0.5em 0.125em 0;
+                                    width: 0.5em;
+                                    height: 0.5em;
+
                                     &.occupant-online,
                                     &.occupant-chat {
                                         background-color: #1A9707;
@@ -190,65 +267,223 @@
                                     &.occupant-xa {
                                         background-color: orange;
                                     }
+                                    &.occupant-offline {
+                                        background-color: darkgrey;
+                                    }
                                 }
-                            }
-                            &.moderator {
-                                color: $moderator-color;
                             }
                         }
                     }
                 }
                 .chatroom-form-container {
                     background-color: white;
-                    border-bottom-left-radius: $chatbox-border-radius;
-                    border-bottom-right-radius: $chatbox-border-radius;
+                    border-bottom-left-radius: var(--chatbox-border-radius);
+                    border-bottom-right-radius: var(--chatbox-border-radius);
                     border: 0;
-                    color: $text-color;
-                    font-size: $font-size;
-                    height: 289px;
+                    color: var(--text-color);
+                    font-size: var(--font-size);
+                    height: 100%;
                     width: 100%;
-                    @include calc(height, '100% - #{$chat-head-height}');
                     overflow-y: auto;
-                    position: absolute;
 
                     .validation-message {
                         font-size: 90%;
-                        color: $error-color;
-                    }
-                    .chatroom-form {
-                        label,
-                        input[type=text] {
-                            display: block;
-                        }
+                        color: var(--error-color);
                     }
                     input[type=button],
                     input[type=submit] {
                         margin: 0 0.5em;
                     }
                     .button-primary {
-                        background-color: $chatroom-head-color;
+                        background-color: var(--chatroom-head-button-color);
                     }
                 }
             }
         }
 
-        form.sendXMPPMessage {
+        .sendXMPPMessage {
             .chat-toolbar {
-                background-color: $chatroom-toolbar-color;
+                background-color: white;
+                border-top: var(--message-input-border-top);
+                color: var(--message-input-color);
+                .fas, .fas:hover,
+                .far, .far:hover,
+                .fa, .fa:hover {
+                    color: var(--message-input-color);
+                }
             }
             .chat-textarea {
                 border-bottom-right-radius: 0;
+                &.correcting {
+                    background-color: var(--chatroom-correcting-color);
+                }
             }
             .send-button {
-                background-color: $chatroom-head-color;
+                background-color: var(--message-input-color);
             }
         }
 
         .room-invite {
+            padding-bottom: 1em;
             .invited-contact {
                 margin: -1px 0 0 -1px;
                 width: 100%;
                 border: 1px solid #999;
+            }
+        }
+    }
+}
+
+/* ******************* Overlay  styles *************************** */
+
+#conversejs.converse-overlayed {
+    .chatbox {
+        &.chatroom {
+            .chatroom-features {
+                display: none !important;
+            }
+
+            min-width: var(--chatroom-width) !important;
+            width: var(--chatroom-width);
+            .box-flyout {
+                min-width: var(--chatroom-width) !important;
+                width: var(--chatroom-width);
+            }
+            .chatbox-title {
+                @include make-col(7);
+                .chatroom-description {
+                    font-size: 80%;
+                }
+            }
+            .chatbox-buttons {
+                @include make-col(5);
+            }
+            .chatroom-body {
+                .occupants {
+                    .occupants-heading {
+                        padding: 0;
+                    }
+                    .chatroom-features {
+                        .feature {
+                            font-size: var(--font-size-tiny);
+                        }
+                    }
+                    ul {
+                        .occupant {
+                            .occupant-nick-badge {
+                                .occupant-badges {
+                                    display: none;
+                                }
+                            }
+                            .occupant-status {
+                                margin-top: 6px;
+                            }
+                        }
+                    }
+                }
+                .chat-area {
+                    min-width: var(--overlayed-chat-width);
+                }
+            }
+            .sendXMPPMessage {
+                .chat-toolbar {
+                    li {
+                        .toolbar-menu {
+                            min-width: 280px;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+#conversejs.converse-fullscreen {
+    .chatroom {
+        .box-flyout {
+            .chatbox-title {
+                @include make-col(9);
+            }
+            .chatbox-buttons {
+                @include make-col(3);
+            }
+        }
+    }
+}
+
+@include media-breakpoint-down(sm) {
+
+    #conversejs:not(.converse-embedded) {
+        .chatroom {
+            width: 100vw !important;
+            .box-flyout {
+                .chatbox-navback {
+                    @include make-col(2);
+                }
+                .chatbox-title {
+                    @include make-col(7);
+                }
+                .chatbox-buttons {
+                    @include make-col(3);
+                }
+            }
+        }
+    }
+}
+
+#conversejs.converse-fullscreen,
+#conversejs.converse-mobile {
+
+    .chatroom {
+        .box-flyout {
+            background-color: var(--chatroom-head-color);
+            border: var(--flyout-padding) solid var(--chatroom-head-color);
+            border-top: 0.8em solid var(--chatroom-head-color);
+            width: 100%;
+
+            .chatbox-title {
+                .chatroom-description {
+                    font-size: 70%;
+                }
+            }
+
+            .chatroom-body {
+                border-top-radius: var(--chatbox-border-radius);
+                .chatroom-form-container {
+                    border-radius: var(--chatbox-border-radius);
+                }
+                .chat-area {
+                    border-top-left-radius: var(--chatbox-border-radius);
+                    .chat-content {
+                        border-top-left-radius: var(--chatbox-border-radius);
+                    }
+                    &.full {
+                        .new-msgs-indicator {
+                            max-width: 100%;
+                        }
+                    }
+                }
+                .occupants {
+                    border-top-right-radius: var(--chatbox-border-radius);
+                    padding: var(--occupants-padding);
+                    .occupants-heading {
+                        font-size: var(--font-size-large);
+                    }
+                    ul {
+                        &.occupant-list {
+                            li {
+                                font-size: var(--font-size-small);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        .room-invite {
+            span {
+                .invited-contact {
+                    margin: 0 0 0.5em -1px;
+                }
             }
         }
     }

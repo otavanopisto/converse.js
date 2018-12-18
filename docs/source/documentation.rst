@@ -40,9 +40,11 @@ installed.
 We use `zc.buildout <http://www.buildout.org/en/latest/>`_ to install Sphinx
 and the theme.
 
-To install Sphinx, do the following::
+To install Sphinx, do the following inside the Converse repo::
 
-    python bootstrap.py
+    virtualenv .
+    source bin/activate
+    pip install -r requirements.txt
     ./bin/buildout
 
 Generate the HTML
@@ -56,3 +58,11 @@ running::
 The HTMl files will be located in ``./docs/html``
 
 .. warning:: When contributing, please don't commit any generated html files.
+
+Serving the documentation
+-------------------------
+
+To view the generated docs, you can run ``make serve`` and then open
+http://localhost:8000/docs/html/index.html in your browser.
+
+

@@ -1,1 +1,1 @@
-<div class="chat-{{{type}}}">{{{message}}}</div>
+<div class="message chat-info {[ if (o.type !== 'info') { ]} chat-{{{o.type}}} {[ } ]}" data-isodate="{{{o.isodate}}}">{{o.message}}</div>
