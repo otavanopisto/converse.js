@@ -1,16 +1,10 @@
-<a class="open-chat {[ if (num_unread) { ]} unread-msgs {[ } ]}"
-   title="{{{title_fullname}}}: {{{fullname}}} JID: {{{jid}}} {{{desc_chat}}}"
-   href="#">
-    <div class="avatar avatar-{{{chat_status}}}">
-        <span class="status-icon icon-{{{chat_status}}}" title="{{{desc_status}}}"></span>
-    </div>
-    {[ if (num_unread) { ]}
-    <span class="msgs-indicator">{{{ num_unread }}}</span>
+<a class="list-item-link cbox-list-item open-chat w-100 {[ if (o.num_unread) { ]} unread-msgs {[ } ]}"
+   title="{{{o.desc_chat}}}" href="#">
+    <span class="{{{o.status_icon}}}" title="{{{o.desc_status}}}"></span>
+    {[ if (o.num_unread) { ]}
+    <span class="msgs-indicator">{{{ o.num_unread }}}</span>
     {[ } ]}
-    <span class="contact-name {[ if (num_unread) { ]} unread-msgs {[ } ]}">{{{fullname}}}</span>
-</a>
-{[ if (allow_contact_removal) { ]}
-<a class="remove-xmpp-contact icon-remove" title="{{{desc_remove}}}" href="#"></a>
+    <span class="contact-name {[ if (o.num_unread) { ]} unread-msgs {[ } ]}">{{{o.display_name}}}</span></a>
+{[ if (o.allow_contact_removal) { ]}
+<a class="list-item-action remove-xmpp-contact far fa-trash-alt" title="{{{o.desc_remove}}}" href="#"></a>
 {[ } ]}
-
-

@@ -35,10 +35,45 @@ h5 {
 
 .sidebar-title {
     padding-left: 15px;
+    color: #716b7a;
+}
+
+.sponsors-list {
+    overflow-y: hidden !important;
+    overflow-x: hidden;
+}
+
+.bs-sidenav .sponsors-list li a:hover {
+    background-color: transparent;
+    border: none;
+}
+
+.sponsors-list li {
+    padding: 0.5em 0;
+}
+
+.sponsors-list li a {
+    background-color: transparent;
+    text-align: center;
+}
+
+.centered-text-container {
+    display: block;
+    width: 100%;
+    text-align: center;
+}
+
+.patreon-link-container {
+    margin: 0.5em 0 1em 0;
+    padding: 0;
+}
+
+.patreon-link-container a {
+    font-size: 85%;
 }
 
 #sidebar > .nav-list {
-    max-height: 70vh;
+    max-height: 48vh;
     overflow-y: scroll;
 }
 
@@ -47,7 +82,7 @@ h5 {
 }
 .bs-sidenav .nav .nav .nav > li > a {
     font-size: 90%;
-	color: gray;
+    color: gray;
 }
 
 /*

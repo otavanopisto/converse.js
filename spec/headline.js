@@ -2,15 +2,14 @@
     define([
         "jasmine",
         "jquery",
-        "converse-core",
-        "utils",
         "mock",
         "test-utils"
         ], factory);
-} (this, function (jasmine, $, converse, utils, mock, test_utils) {
+} (this, function (jasmine, $, mock, test_utils) {
     "use strict";
     var $msg = converse.env.$msg,
-        _ = converse.env._;
+        _ = converse.env._,
+        utils = converse.env.utils;
 
     describe("A headlines box", function () {
 
@@ -66,7 +65,8 @@
                 .c('subject').t('SIEVE').up()
                 .c('body').t('&lt;juliet@example.com&gt; You got mail.').up()
                 .c('x', {'xmlns': 'jabber:x:oob'})
-                .c('url').t('imap://romeo@example.com/INBOX;UIDVALIDITY=385759043/;UID=18');
+                    .c('url').t('imap://romeo@example.com/INBOX;UIDVALIDITY=385759043/;UID=18');
+
             _converse.connection._dataRecv(test_utils.createRequest(stanza));
             expect(
                 _.includes(
@@ -76,6 +76,10 @@
             expect(utils.isHeadlineMessage.called).toBeTruthy();
             expect(utils.isHeadlineMessage.returned(true)).toBeTruthy();
             utils.isHeadlineMessage.restore(); // unwraps
+            // Headlines boxes don't show an avatar
+            var view = _converse.chatboxviews.get('notify.example.com');
+            expect(view.model.get('show_avatar')).toBeFalsy();
+            expect(view.el.querySelector('img.avatar')).toBe(null);
             done();
         }));
 

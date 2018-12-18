@@ -9,10 +9,10 @@ Quickstart
 Getting a demo up and running
 =============================
 
-Use the content delivery network
---------------------------------
+Option 1: Use the content delivery network
+------------------------------------------
 
-Converse.js has a `CDN <https://en.wikipedia.org/wiki/Content_delivery_network>`_, provided by `KeyCDN <http://keycdn.com/>`_,
+Converse has a `CDN <https://en.wikipedia.org/wiki/Content_delivery_network>`_, provided by `KeyCDN <http://keycdn.com/>`_,
 which hosts its JavaScript and CSS files.
 
 The latest versions of these files are available at these URLs:
@@ -20,88 +20,94 @@ The latest versions of these files are available at these URLs:
 * https://cdn.conversejs.org/dist/converse.min.js
 * https://cdn.conversejs.org/css/converse.min.css
 
-To load a specific version of Converse.js you can put the version in the URL, like so:
+If you are integrating Converse into an existing website or app, then we recommend
+that you load a specific version of Converse. Otherwise your website or app
+might break when a new backwards-incompatible version of Converse is released.
 
-* https://cdn.conversejs.org/3.0.3/dist/converse.min.js
-* https://cdn.conversejs.org/3.0.3/css/converse.min.css
+To load a specific version of Converse you can put the version in the URL:
+
+* https://cdn.conversejs.org/4.0.6/dist/converse.min.js
+* https://cdn.conversejs.org/4.0.6/css/converse.min.css
 
 You can include these two URLs inside the *<head>* element of your website
 via the *script* and *link* tags:
 
 .. code-block:: html
 
-    <link rel="stylesheet" type="text/css" media="screen" href="https://cdn.conversejs.org/css/converse.min.css">
-    <script src="https://cdn.conversejs.org/dist/converse.min.js"></script>
+    <link rel="stylesheet" type="text/css" media="screen" href="https://cdn.conversejs.org/4.0.6/css/converse.min.css">
+    <script src="https://cdn.conversejs.org/4.0.6/dist/converse.min.js" charset="utf-8"></script>
 
-.. note:: Instead of always loading the latest version of Converse.js via the
-    CDN, it's generally better to load a specific version (preferably the
-    latest one), to avoid breakage when new backwards-incompatible versions are
-    released.
 
-Initializing Converse.js
-------------------------
+Option 2: Building the files yourself
+-------------------------------------
 
-You'll then need to initialize Converse.js with configuration settings relevant to your requirements.
-Refer to the :ref:`configuration-settings` section for info on all the available configuration settings.
+Instead of using the CDN, you can also create your own builds and host them yourself.
+
+Have a look at the :ref:`creating_builds` section on how to create your own builds.
+
+In short, you should be able to do it by running ``make dist`` inside a
+checkout of the `Converse repo <http://github.com/conversejs/converse.js/>`_.
+
+Besides including the ``converse.min.js`` and ``converse.min.css`` files,
+you'll also need to make sure that the ``webfonts`` directory is available in
+the same location as ``converse.min.css``.
+
+
+Initializing Converse
+---------------------
+
+You'll need to initialize Converse with configuration settings relevant to your requirements.
+Take a look at the :ref:`configuration-settings` section for info on all the available settings.
 
 To quickly get started, you can put the following JavaScript code at the
 bottom of your page (after the closing *</body>* element)::
 
     <script>
         converse.initialize({
-            bosh_service_url: 'https://bind.conversejs.org', // Please use this connection manager only for testing purposes
+            bosh_service_url: 'https://conversejs.org/http-bind/', // Please use this connection manager only for testing purposes
             show_controlbox_by_default: true
         });
     </script>
 
 The `index.html <https://github.com/jcbrand/converse.js/blob/master/index.html>`_ file inside the
-Converse.js repository may serve as a nice usable example.
+Converse repository serves as a nice, usable example.
 
-Alternative builds of Converse.js
-=================================
+Fullscreen version
+------------------
 
-The minified ``.js`` and ``.css`` files provide the same functionality as is available
-on the `conversejs.org <http://conversejs.org>`_ website. Useful for testing or demoing.
+Converse also comes in a fullscreen version.
+A hosted version is available online at `conversejs.org/fullscreen <https://conversejs.org/fullscreen.html>`_.
 
-Alternative builds are however also available via the CDN.
+Originally this version was available as a separate build file, but 
+as of version 4.0.0 and higher, the difference between the "overlay" and the
+"fullscreen" versions of converse.js is simply a matter of configuring the 
+:ref:`view_mode`.
 
-Mobile build
-------------
+For example::
 
-Besides the default build mentioned above, there is a build intended for mobile
-websites, called ``converse-mobile.min.js``.
-Take a look at the ``mobile.html`` file in the Converse.js repository
-for an example of this build being used. There's an additional CSS file called 
-``mobile.min.css`` which should be used with the mobile build.
-
-When you load `conversejs.org <https://conversejs.org>`_ with a mobile device
-then the mobile JavaScript build and its CSS will be used.
-
-Excluding 3rd party dependencies
---------------------------------
-
-Then there is also a build that contains no 3rd party dependencies, called 
-``converse-no-dependencies.min.js`` and which is used in the ``non_amd.html``
-page in the repository.
-
-Excluding only jQuery
----------------------
-
-Lastly there is a build called ``converse.nojquery.min.js`` which excludes only
-jQuery but still includes all other 3rd party dependencies.
+    <script>
+        converse.initialize({
+            bosh_service_url: 'https://conversejs.org/http-bind/', // Please use this connection manager only for testing purposes
+            view_mode: 'fullscreen'
+        });
+    </script>
 
 Where to go from here?
 ======================
+
+Have a look at the various :ref:`features <features>` that Converse provides, for some of
+them you might have to do more setup work, like configuring an XMPP server or
+webserver.
 
 You might want to implement some kind of persistent single-session solution for
 your website, where users authenticate once in your website and are then
 automatically logged in to the XMPP server as well. For more info on how this
 can be achieved, read: :ref:`session-support`.
 
-Perhaps you want to create your own custom build of Converse.js? Then head over
-to the :doc:`builds` section, or more generally the :doc:`development`
+Perhaps you want to create your own custom build of Converse? Then head over
+to the :doc:`builds` section, or more generally the :doc:`development <development>`
 documentation.
 
-Do you want to know how to theme Converse.js? Then read the :doc:`theming`
+Do you want to know how to theme Converse? Then read the :doc:`theming <theming>`
 documentation.
 

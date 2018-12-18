@@ -1,32 +1,66 @@
-/*global define */
-if (typeof define !== 'undefined') {
-    // The section below determines which plugins will be included in a build
-    define([
-        "converse-core",
-        // PLEASE NOTE: By default all translations are included.
-        // You can modify the file src/locales.js to include only those
-        // translations that you care about.
+/* START: Removable components
+ * --------------------
+ * Any of the following components may be removed if they're not needed.
+ */
+import "converse-autocomplete";
+import "converse-bookmarks";       // XEP-0048 Bookmarks
+import "converse-caps";            // XEP-0115 Entity Capabilities
+import "converse-chatview";        // Renders standalone chat boxes for single user chat
+import "converse-controlbox";      // The control box
+import "converse-dragresize";      // Allows chat boxes to be resized by dragging them
+import "converse-embedded";
+import "converse-fullscreen";
+import "converse-push";            // XEP-0357 Push Notifications
+import "converse-headline";        // Support for headline messages
+import "@converse/headless/converse-mam";             // XEP-0313 Message Archive Management
+import "converse-minimize";        // Allows chat boxes to be minimized
+import "converse-muc-views";       // Views related to MUC
+import "converse-notification";    // HTML5 Notifications
+import "converse-omemo";
+import "@converse/headless/converse-ping";            // XEP-0199 XMPP Ping
+import "converse-register";        // XEP-0077 In-band registration
+import "converse-roomslist";       // Show currently open chat rooms
+import "converse-rosterview";
+import "@converse/headless/converse-vcard";           // XEP-0054 VCard-temp
+/* END: Removable components */
 
-        /* START: Removable components
-         * --------------------
-         * Any of the following components may be removed if they're not needed.
-         */
-        "converse-chatview",    // Renders standalone chat boxes for single user chat
-        "converse-controlbox",  // The control box
-        "converse-bookmarks",   // XEP-0048 Bookmarks
-        "converse-roomslist",   // Show currently open chat rooms
-        "converse-mam",         // XEP-0313 Message Archive Management
-        "converse-muc",         // XEP-0045 Multi-user chat
-        "converse-vcard",       // XEP-0054 VCard-temp
-        "converse-otr",         // Off-the-record encryption for one-on-one messages
-        "converse-register",    // XEP-0077 In-band registration
-        "converse-ping",        // XEP-0199 XMPP Ping
-        "converse-notification",// HTML5 Notifications
-        "converse-minimize",    // Allows chat boxes to be minimized
-        "converse-dragresize",  // Allows chat boxes to be resized by dragging them
-        "converse-headline",    // Support for headline messages
-        /* END: Removable components */
-    ], function (converse) {
-        return converse;
-    });
+import converse from "@converse/headless/converse-core";
+
+const WHITELISTED_PLUGINS = [
+    'converse-autocomplete',
+    'converse-bookmarks',
+    'converse-caps',
+    'converse-chatboxviews',
+    'converse-chatview',
+    'converse-controlbox',
+    'converse-dragresize',
+    'converse-embedded',
+    'converse-fullscreen',
+    'converse-headline',
+    'converse-message-view',
+    'converse-minimize',
+    'converse-modal',
+    'converse-muc-views',
+    'converse-notification',
+    'converse-oauth',
+    'converse-omemo',
+    'converse-profile',
+    'converse-push',
+    'converse-register',
+    'converse-roomslist',
+    'converse-rosterview',
+    'converse-singleton'
+];
+
+const initialize = converse.initialize;
+
+converse.initialize = function (settings, callback) {
+    if (converse.env._.isArray(settings.whitelisted_plugins)) {
+        settings.whitelisted_plugins = settings.whitelisted_plugins.concat(WHITELISTED_PLUGINS);
+    } else {
+        settings.whitelisted_plugins = WHITELISTED_PLUGINS;
+    }
+    return initialize(settings, callback);
 }
+
+export default converse;

@@ -2,12 +2,12 @@
 
     <div id="banner"><a href="https://github.com/jcbrand/converse.js/blob/master/docs/source/theming.rst">Edit me on GitHub</a></div>
 
-=============================
-The converse.js developer API
-=============================
+=========================
+The old API documentation
+=========================
 
-.. note:: The API documented here is available in Converse.js 0.8.4 and higher.
-        Earlier versions of Converse.js might have different API methods or none at all.
+.. note:: The API documented here is available in Converse 0.8.4 and higher.
+        Earlier versions of Converse might have different API methods or none at all.
 
 .. note:: From version 3.0.0 and onwards many API methods have been made
         private and available to plugins only. This means that if you want to
@@ -15,7 +15,7 @@ The converse.js developer API
         access it. This change is done to avoid leakage of sensitive data to
         malicious or non-whitelisted scripts.
 
-The Converse.js API is broken up into different logical "groupings" (for
+The Converse API is broken up into different logical "groupings" (for
 example ``converse.plugins`` or ``converse.contacts``).
 
 There are some exceptions to this, like ``converse.initialize``, which aren't
@@ -58,8 +58,8 @@ initialize
 
 .. note:: This method is the one exception of a method which is not logically grouped as explained above.
 
-Publich API method which initializes converse.js.
-This method must always be called when using converse.js.
+Publich API method which initializes Converse.
+This method must always be called when using Converse.
 
 The `initialize` method takes a map of :ref:`configuration-settings`.
 
@@ -105,7 +105,7 @@ Registers a new plugin.
 
             // Inside this method, you have access to the closured
             // _converse object, which contains the core logic and data
-            // structures of converse.js
+            // structures of Converse
         }
     }
     converse.plugins.add('myplugin', plugin);
@@ -182,7 +182,7 @@ two important ways:
 * A handler registered for a promise, will still fire *after* the promise has
   been resolved, which is not the case with an event handler.
 
-Converse.js has the following promises:
+Converse has the following promises:
 
 * :ref:`cachedRoster`
 * :ref:`chatBoxesFetched`
@@ -210,7 +210,7 @@ already by that time.
 The **archive** grouping
 ------------------------
 
-Converse.js supports the *Message Archive Management*
+Converse supports the *Message Archive Management*
 (`XEP-0313 <https://xmpp.org/extensions/xep-0313.html>`_) protocol,
 through which it is able to query an XMPP server for archived messages.
 
@@ -263,12 +263,12 @@ the returned messages.
 
 **Waiting until server support has been determined**
 
-The query method will only work if converse.js has been able to determine that
+The query method will only work if Converse has been able to determine that
 the server supports MAM queries, otherwise the following error will be raised:
 
 - *This server does not support XEP-0313, Message Archive Management*
 
-The very first time converse.js loads in a browser tab, if you call the query
+The very first time Converse loads in a browser tab, if you call the query
 API too quickly, the above error might appear because service discovery has not
 yet been completed.
 
@@ -302,7 +302,6 @@ the query options need to contain the the JID (Jabber ID) of the user or
 room under the  ``with`` key.
 
 .. code-block:: javascript
-
 
     converse.plugins.add('myplugin', {
         initialize: function () {
@@ -431,6 +430,134 @@ disconnect
 Terminates the connection.
 
 
+The **disco** grouping
+----------------------
+
+This grouping collects API functions related to `service discovery
+<https://xmpp.org/extensions/xep-0030.html>`_.
+
+The **disco.own** grouping
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The **disco.own.features** grouping
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+add
+***
+
+Paramters:
+
+* (String) name
+
+get
+***
+
+Returns all of the identities registered for this client (i.e. instance of Converse).
+
+.. code-block:: javascript
+
+    const identities = _converse.api.disco.own.identities.get();
+
+
+The **disco.own.identities** grouping
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+add
+***
+
+Paramters:
+
+* (String) category
+* (String) type
+* (String) name
+* (String) lang
+
+Lets you add new identities for this client (i.e. instance of Converse).
+
+.. code-block:: javascript
+
+    _converse.api.disco.own.identities.add('client', 'web', 'Converse');
+
+
+get
+***
+
+Returns all of the identities registered for this client (i.e. instance of Converse).
+
+.. code-block:: javascript
+
+    const identities = _converse.api.disco.own.identities.get();
+
+clear
+*****
+
+Clears all previously set identities.
+
+
+getIdentity
+~~~~~~~~~~~
+
+Paramters:
+
+* (String) category
+* (String) type
+* (String) entity JID
+
+Get the identity (with the given category and type) for a given disco entity.
+
+For example, when determining support for PEP (personal eventing protocol), you
+want to know whether the user's own JID has an identity with
+``category='pubsub'`` and ``type='pep'`` as explained in this section of
+XEP-0163: https://xmpp.org/extensions/xep-0163.html#support
+
+.. code-block:: javascript
+
+    converse.plugins.add('myplugin', {
+        initialize: function () {
+
+            _converse.api.disco.getIdentity('pubsub', 'pep', _converse.bare_jid).then(
+                function (identity) {
+                    if (_.isNil(identity)) {
+                        // The entity DOES NOT have this identity
+                    } else {
+                        // The entity DOES have this identity
+                    }
+                }
+            ).catch(_.partial(_converse.log, _, Strophe.LogLevel.FATAL));
+        }
+    });
+
+supports
+~~~~~~~~
+
+Used to determine whether an entity supports a given feature.
+
+Returns a `Promise` which, when resolved, returns a map/object with keys
+`supported` (a boolean) and `feature` which is a `Backbone.Model <http://backbonejs.org/#Model>`_.
+
+.. code-block:: javascript
+
+    converse.plugins.add('myplugin', {
+        initialize: function () {
+
+            _converse.api.disco.supports(Strophe.NS.MAM, _converse.bare_jid)
+            .then(value => {
+                // `value` is a map with two keys, `supported` and `feature`.
+                if (value.supported) {
+                    // The feature is supported
+                } else {
+                    // The feature is not supported
+                }
+            }).catch(() => {
+                _converse.log(
+                    "Error or timeout while checking for feature support",
+                    Strophe.LogLevel.ERROR
+                );
+            });
+        }
+    });
+
+
 The **user** grouping
 ---------------------
 
@@ -439,7 +566,7 @@ This grouping collects API functions related to the current logged in user.
 jid
 ~~~
 
-Return's the current user's full JID (Jabber ID).
+Returns the current user's full JID (Jabber ID).
 
 .. code-block:: javascript
 
@@ -469,7 +596,7 @@ Logs the user in. This method can accept a map with the credentials, like this:
         }
     });
 
-or it can be called without any parameters, in which case converse.js will try
+or it can be called without any parameters, in which case Converse will try
 to log the user in by calling the `prebind_url` or `credentials_url` depending
 on whether prebinding is used or not.
 
@@ -620,7 +747,9 @@ To return all contacts, simply call ``get`` without any parameters:
     });
 
 
-The returned roster contact objects have these attributes:
+The returned roster contact is a `Backbone.Model <http://backbonejs.org/#Model>`_ of type _converse.RosterContacts.
+
+It has the following attributes (which should be accessed via `get <http://backbonejs.org/#Model-get>`_).
 
 +----------------+-----------------------------------------------------------------------------------------------------------------+
 | Attribute      |                                                                                                                 |
@@ -676,89 +805,157 @@ You may also provide the fullname. If not present, we use the jid as fullname:
 The **chats** grouping
 ----------------------
 
-Note, for MUC chat rooms, you need to use the "rooms" grouping instead.
+Note, for MUC chatrooms, you need to use the "rooms" grouping instead.
 
 get
 ~~~
 
-Returns an object representing a chat box.
+Returns an object representing a chat. The chat should already be open.
 
-To return a single chat box, provide the JID of the contact you're chatting
-with in that chat box:
+To return a single chat, provide the JID of the contact you're chatting
+with in that chat:
 
 .. code-block:: javascript
 
     _converse.api.chats.get('buddy@example.com')
 
-To return an array of chat boxes, provide an array of JIDs:
+To return an array of chats, provide an array of JIDs:
 
 .. code-block:: javascript
 
     _converse.api.chats.get(['buddy1@example.com', 'buddy2@example.com'])
 
-To return all open chat boxes, call the method without any JIDs::
+To return all open chats, call the method without any JIDs::
 
     _converse.api.chats.get()
 
 open
 ~~~~
 
-Opens a chat box and returns a Backbone.View object representing a chat box.
+Opens a new chat.
 
-To open a single chat box, provide the JID of the contact:
+It returns an promise which will resolve with a `Backbone.Model <https://backbonejs.org/#Model>`_ representing the chat.
+
+Note that converse doesn't allow opening chats with users who aren't in your roster
+(unless you have set :ref:`allow_non_roster_messaging` to ``true``).
+
+These two events fire only once per session, so they're also available as promises.
+
+So, to open a single chat:
+
+.. code-block:: javascript
+
+    converse.plugins.add('myplugin', {
+        initialize: function() {
+            var _converse = this._converse;
+
+            // Note, buddy@example.org must be in your contacts roster!
+            _converse.api.chats.open('buddy@example.com').then((chat) => {
+                // Now you can do something with the chat model
+            });
+        }
+    });
+
+To return an array of chats, provide an array of JIDs:
 
 .. code-block:: javascript
 
     converse.plugins.add('myplugin', {
         initialize: function () {
-            this._converse.api.chats.open('buddy@example.com')
+            var _converse = this._converse;
+            // Note, these users must first be in your contacts roster!
+            _converse.api.chats.open(['buddy1@example.com', 'buddy2@example.com']).then((chats) => {
+                // Now you can do something with the chat models
+            });
         }
     });
 
-To return an array of chat boxes, provide an array of JIDs:
+
+The **chatviews** grouping
+--------------------------
+
+.. note:: This is only for private chats.
+
+get
+~~~
+
+Returns a `Backbone.View <http://backbonejs.org/#View>`_ of type _converse.ChatBoxView.
+
+The chat should already be open, otherwise `undefined` will be returned.
+
+To return a single view, provide the JID of the contact:
 
 .. code-block:: javascript
 
-    converse.plugins.add('myplugin', {
-        initialize: function () {
-            this._converse.api.chats.open(['buddy1@example.com', 'buddy2@example.com'])
-        }
-    });
+    _converse.api.chatviews.get('buddy@example.com')
+
+To return an array of views, provide an array of JIDs:
+
+.. code-block:: javascript
+
+    _converse.api.chatviews.get(['buddy1@example.com', 'buddy2@example.com'])
 
 
-*The returned chat box object contains the following methods:*
+.. _`listen-grouping`:
 
-+-------------------+------------------------------------------+
-| Method            | Description                              |
-+===================+==========================================+
-| close             | Close the chat box.                      |
-+-------------------+------------------------------------------+
-| focus             | Focuses the chat box textarea            |
-+-------------------+------------------------------------------+
-| model.endOTR      | End an OTR (Off-the-record) session.     |
-+-------------------+------------------------------------------+
-| model.get         | Get an attribute (i.e. accessor).        |
-+-------------------+------------------------------------------+
-| model.initiateOTR | Start an OTR (off-the-record) session.   |
-+-------------------+------------------------------------------+
-| model.maximize    | Minimize the chat box.                   |
-+-------------------+------------------------------------------+
-| model.minimize    | Maximize the chat box.                   |
-+-------------------+------------------------------------------+
-| model.set         | Set an attribute (i.e. mutator).         |
-+-------------------+------------------------------------------+
-| show              | Opens/shows the chat box.                |
-+-------------------+------------------------------------------+
+The **listen** grouping
+-----------------------
 
-*The get and set methods can be used to retrieve and change the following attributes:*
+Converse emits events to which you can subscribe to.
 
-+-------------+-----------------------------------------------------+
-| Attribute   | Description                                         |
-+=============+=====================================================+
-| height      | The height of the chat box.                         |
-+-------------+-----------------------------------------------------+
-| url         | The URL of the chat box heading.                    |
-+-------------+-----------------------------------------------------+
+Concerning events, the following methods are available under the "listen"
+grouping:
+
+* **on(eventName, callback, [context])**:
+
+    Calling the ``on`` method allows you to subscribe to an event.
+    Every time the event fires, the callback method specified by ``callback`` will be
+    called.
+
+    Parameters:
+
+    * ``eventName`` is the event name as a string.
+    * ``callback`` is the callback method to be called when the event is emitted.
+    * ``context`` (optional), the value of the `this` parameter for the callback.
+
+    For example:
+
+.. code-block:: javascript
+
+        _converse.api.listen.on('message', function (messageXML) { ... });
+
+* **once(eventName, callback, [context])**:
+
+    Calling the ``once`` method allows you to listen to an event
+    exactly once.
+
+    Parameters:
+
+    * ``eventName`` is the event name as a string.
+    * ``callback`` is the callback method to be called when the event is emitted.
+    * ``context`` (optional), the value of the `this` parameter for the callback.
+
+    For example:
+
+.. code-block:: javascript
+
+        _converse.api.listen.once('message', function (messageXML) { ... });
+
+* **not(eventName, callback)**
+
+    To stop listening to an event, you can use the ``not`` method.
+
+    Parameters:
+
+    * ``eventName`` is the event name as a string.
+    * ``callback`` refers to the function that is to be no longer executed.
+
+    For example:
+
+.. code-block:: javascript
+
+        _converse.api.listen.not('message', function (messageXML) { ... });
+
 
 The **rooms** grouping
 ----------------------
@@ -766,7 +963,7 @@ The **rooms** grouping
 get
 ~~~
 
-Returns an object representing a multi user chat box (room).
+Returns an object representing a multi user chat (room).
 It takes 3 parameters:
 
 * the room JID (if not specified, all rooms will be returned).
@@ -781,22 +978,24 @@ It takes 3 parameters:
 .. code-block:: javascript
 
     converse.plugins.add('myplugin', {
+
         initialize: function () {
-            var nick = 'dread-pirate-roberts';
-            var create_if_not_found = true;
-            this._converse.api.rooms.open(
-                'group@muc.example.com',
-                {'nick': nick},
-                create_if_not_found
-            )
+            var _converse = this._converse;
+            _converse.api.waitUntil('roomsAutoJoined').then(function () {
+                var create_if_not_found = true;
+                this._converse.api.rooms.get(
+                    'group@muc.example.com',
+                    {'nick': 'dread-pirate-roberts'},
+                    create_if_not_found
+                )
+            });
         }
     });
-
 
 open
 ~~~~
 
-Opens a multi user chat box and returns an object representing it.
+Opens a multi user chat and returns an object representing it.
 Similar to the ``chats.get`` API.
 
 It takes 2 parameters:
@@ -805,7 +1004,7 @@ It takes 2 parameters:
 * A map (object) containing any extra room attributes. For example, if you want
   to specify the nickname, use ``{'nick': 'bloodninja'}``.
 
-To open a single multi user chat box, provide the JID of the room:
+To open a single multi user chat, provide the JID of the room:
 
 .. code-block:: javascript
 
@@ -855,6 +1054,9 @@ Room attributes that may be passed in:
   The values should be named without the ``muc#roomconfig_`` prefix.
 * *maximize*: A boolean, indicating whether minimized rooms should also be
   maximized, when opened. Set to ``false`` by default.
+* *bring_to_foreground*: A boolean indicating whether the room should be
+  brought to the foreground and therefore replace the currently shown chat.
+  If there is no chat currently open, then this option is ineffective.
 
 For example, opening a room with a specific default configuration:
 
@@ -888,8 +1090,8 @@ For example, opening a room with a specific default configuration:
 close
 ~~~~~
 
-Lets you close open chat rooms. You can call this method without any arguments
-to close all open chat rooms, or you can specify a single JID or an array of
+Lets you close open chatrooms. You can call this method without any arguments
+to close all open chatrooms, or you can specify a single JID or an array of
 JIDs.
 
 .. _`promises-grouping`:
@@ -897,7 +1099,7 @@ JIDs.
 The **promises** grouping
 -------------------------
 
-Converse.js and its plugins emit various events which you can listen to via the 
+Converse and its plugins emit various events which you can listen to via the
 :ref:`listen-grouping`.
 
 Some of these events are also available as `ES2015 Promises <http://es6-features.org/#PromiseUsage>`_,
@@ -956,7 +1158,7 @@ For example:
 The **settings** grouping
 -------------------------
 
-This grouping allows access to the configuration settings of converse.js.
+This grouping allows access to the configuration settings of Converse.
 
 .. _`settings-update`:
 
@@ -993,7 +1195,7 @@ For example:
 get(key)
 ~~~~~~~~
 
-Returns the value of a configuration settings. For example:
+Returns the value of the particular configuration setting. For example:
 
 .. code-block:: javascript
 
@@ -1037,7 +1239,7 @@ or :
     });
 
 Note, this is not an alternative to calling ``converse.initialize``, which still needs
-to be called. Generally, you'd use this method after converse.js is already
+to be called. Generally, you'd use this method after Converse is already
 running and you want to change the configuration on-the-fly.
 
 The **tokens** grouping
@@ -1061,63 +1263,99 @@ Example:
     });
 
 
-.. _`listen-grouping`:
-
-The **listen** grouping
+The **vcard** grouping
 -----------------------
 
-Converse.js emits events to which you can subscribe from your own JavaScript.
+get
+~~~
 
-Concerning events, the following methods are available under the "listen"
-grouping:
+Parameters:
 
-* **on(eventName, callback, [context])**:
+* ``model`` either a `Backbone.Model` instance, or a string JID.
+* ``force`` (optional), a boolean indicating whether the vcard should be
+  fetched even if it's been fetched before.
 
-    Calling the ``on`` method allows you to subscribe to an event.
-    Every time the event fires, the callback method specified by ``callback`` will be
-    called.
+Returns a Promise which results with the VCard data for a particular JID or for
+a `Backbone.Model` instance which represents an entity with a JID (such as a roster contact,
+chat or chatroom occupant).
 
-    Parameters:
+If a `Backbone.Model` instance is passed in, then it must have either a `jid`
+attribute or a `muc_jid` attribute.
 
-    * ``eventName`` is the event name as a string.
-    * ``callback`` is the callback method to be called when the event is emitted.
-    * ``context`` (optional), the value of the `this` parameter for the callback.
-
-    For example:
-
-.. code-block:: javascript
-
-        _converse.api.listen.on('message', function (messageXML) { ... });
-
-* **once(eventName, callback, [context])**:
-
-    Calling the ``once`` method allows you to listen to an event
-    exactly once.
-
-    Parameters:
-
-    * ``eventName`` is the event name as a string.
-    * ``callback`` is the callback method to be called when the event is emitted.
-    * ``context`` (optional), the value of the `this` parameter for the callback.
-
-    For example:
+Example:
 
 .. code-block:: javascript
 
-        _converse.api.listen.once('message', function (messageXML) { ... });
+    converse.plugins.add('myplugin', {
+        initialize: function () {
 
-* **not(eventName, callback)**
+            _converse.api.waitUntil('rosterContactsFetched').then(() => {
+                this._converse.api.vcard.get('someone@example.org').then(
+                    (vcard) => {
+                        // Do something with the vcard...
+                    }
+                );
+            });
 
-    To stop listening to an event, you can use the ``not`` method.
+        }
+    });
 
-    Parameters:
+set
+~~~
 
-    * ``eventName`` is the event name as a string.
-    * ``callback`` refers to the function that is to be no longer executed.
+Parameters:
 
-    For example:
+* ``data`` a map of VCard keys and values
+
+Enables setting new values for a VCard.
+
+Example:
 
 .. code-block:: javascript
 
-        _converse.api.listen.not('message', function (messageXML) { ... });
+    converse.plugins.add('myplugin', {
+        initialize: function () {
 
+            _converse.api.waitUntil('rosterContactsFetched').then(() => {
+                this._converse.api.vcard.set({
+                    'jid': 'someone@example.org',
+                    'fn': 'Someone Somewhere',
+                    'nickname': 'someone'
+                }).then(() => {
+                    // Succes
+                }).catch(() => {
+                    // Failure
+                }).
+            });
+
+        }
+    });
+
+update
+~~~~~~
+
+Parameters:
+
+* ``model`` a `Backbone.Model` instance
+* ``force`` (optional), a boolean indicating whether the vcard should be
+  fetched again even if it's been fetched before.
+
+Fetches the VCard associated with a particular `Backbone.Model` instance
+(by using its `jid` or `muc_jid` attribute) and then updates the model with the
+returned VCard data.
+
+Returns a promise;
+
+Example:
+
+.. code-block:: javascript
+
+    converse.plugins.add('myplugin', {
+        initialize: function () {
+
+            _converse.api.waitUntil('rosterContactsFetched').then(() => {
+                const chatbox = _converse.chatboxes.getChatBox('someone@example.org');
+                _converse.api.vcard.update(chatbox);
+            });
+        }
+    });
